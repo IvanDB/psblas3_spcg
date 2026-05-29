@@ -400,6 +400,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
 
+  ! Timings
+  real(psb_dpk_)  :: timeData
+
   info = psb_success_
   call psb_erractionsave(err_act)
   
@@ -528,9 +531,13 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     goto 9999
   end if
   
+  timeData = psb_wtime()
   ! First matrix power kernel
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+  timeData = psb_wtime() - timeData;
+  write(*, *) "MPK ", timeData
+
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
@@ -538,20 +545,27 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   end if
 
   ! Compute first Gram system components
+  timeData = psb_wtime()
   call psb_gedots(P, V, temp_fa(:, 1 : s), desc_a, info, global = .false.)
   call psb_gedots(P, r, temp_fa(:, 2*s + 1), desc_a, info, global = .false.)
   call psb_sum(desc_a%get_context(), temp_fa)
+  timeData = psb_wtime() - timeData;
+  write(*, *) "DOT ", timeData
 
   W = temp_fa(:, 1 : s)
   alpha = temp_fa(:, 2*s + 1)
 
   ! Loop until convergence (or maxiter)
   do itidx = 1, itmax_
+    timeData = psb_wtime()
     ! Factor matrix W (if soving with LU or Cholesky factorization)
     if(Gram_solver_ == lapackLU) call dgetrf(s, s, W, s, pW, info)
     if(Gram_solver_ == lapackCC) call dpotrf('L', s, W, s, info)
+    timeData = psb_wtime() - timeData;
+    write(*, *) "MatFact ", timeData
 
     ! Solve for alpha
+    timeData = psb_wtime()
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_1D(W, alpha, FGS_sweeps_)
       case(lapackLU);   call dgetrs('N', s, 1, W, s, pW, alpha, s, info)
@@ -561,28 +575,40 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
+    timeData = psb_wtime() - timeData;
+    write(*, *) "GRAM1D ", timeData
 
     ! Update solution and residual
+    timeData = psb_wtime()
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
     call psb_geaxpby(V, -alpha, r, desc_a, info, upd_flag = .true.)
+    timeData = psb_wtime() - timeData;
+    write(*, *) "AXPY ", timeData
 
     ! Check convergence
     if(psb_check_conv(methdfullname, itidx, x, r, desc_a, stopdat, info)) exit
 
     ! Matrix power kernel
+    timeData = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+    timeData = psb_wtime() - timeData;
+    write(*, *) "MPK ", timeData
 
     ! Compute dot products
+    timeData = psb_wtime()
     call psb_gedots(P, Q, temp_fa(:, 1 : s), desc_a, info, global = .false.)
     call psb_gedots(Z, Q, temp_fa(:, s+1 : 2*s), desc_a, info, global = .false.)
     call psb_gedots(Z, r, temp_fa(:, 2*s + 1), desc_a, info, global = .false.)
     call psb_sum(desc_a%get_context(), temp_fa)
+    timeData = psb_wtime() - timeData;
+    write(*, *) "DOT ", timeData
 
     !Compute new rhs for beta
     B2 = -temp_fa(:, 1 : s)
 
     ! Solve for beta
+    timeData = psb_wtime()
     beta = B2
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_2D(W, beta, FGS_sweeps_)
@@ -593,16 +619,24 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
+    timeData = psb_wtime() - timeData;
+    write(*, *) "GRAM2D ", timeData
 
     ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
+    timeData = psb_wtime()
     call psb_geaxpby(P, beta, temp_mv, desc_a, info, upd_flag = .false.)
     call psb_geaxpby(done, Z, done, temp_mv, P, desc_a, info)
     call psb_geaxpby(V, beta, temp_mv, desc_a, info, upd_flag = .false.)
     call psb_geaxpby(done, Q, done, temp_mv, V, desc_a, info)
+    timeData = psb_wtime() - timeData;
+    write(*, *) "AXPY ", timeData
 
-    !Compute new Gram matrix
+    !Compute new Gram 
+    timeData = psb_wtime()
     W = temp_fa(:, s+1 : 2*s)
     call dgemm('T', 'N', s, s, s, -done, beta, s, B2, s, done, W, s)
+    timeData = psb_wtime() - timeData;
+    write(*, *) "GRAM mat ", timeData
     
     !Compute new rhs for alpha
     alpha = temp_fa(:, 2*s + 1)
