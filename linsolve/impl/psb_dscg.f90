@@ -49,6 +49,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   
   ! Timings
   real(psb_dpk_)  :: timeData
+  real(psb_dpk_)  :: axpyTime, dotTime, mpkTime, G2dTime, G1dTime, GMatTime, GfactTime
+  axpyTime = dzero
+  dotTime = dzero
+  mpkTime = dzero
+  G2dTime = dzero
+  G1dTime = dzero
+  GMatTime = dzero
+  GfactTime = dzero
 
   info = psb_success_
   call psb_erractionsave(err_act)
@@ -183,9 +191,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   ! First matrix power kernel
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
-  timeData = psb_wtime() - timeData;
-  call psb_amx(ctxt, timeData)
-  if(me == psb_root_) write(*, *) "MPK ", timeData
+  mpkTime = mpkTime + (psb_wtime() - timeData);
   
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
@@ -201,9 +207,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_gedots(P, V, temp_fa(:, 1 : s), desc_a, info, global = .false.)
     call psb_gedots(P, r, temp_fa(:, s + 1), desc_a, info, global = .false.)
     call psb_sum(desc_a%get_context(), temp_fa)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "DOT ", timeData
+    dotTime = dotTime + (psb_wtime() - timeData);
 
     W = temp_fa(:, 1 : s)
     alpha = temp_fa(:, s + 1)
@@ -213,9 +217,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     timeData = psb_wtime()
     if(Gram_solver_ == lapackLU) call dgetrf(s, s, W, s, pW, info)
     if(Gram_solver_ == lapackCC) call dpotrf('L', s, W, s, info)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "MatFact ", timeData
+    GfactTime = GfactTime + (psb_wtime() - timeData);
 
     ! Solve for alpha
     call psb_barrier(ctxt)
@@ -229,18 +231,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "GRAM1D ", timeData
+    G1dTime = G1dTime + (psb_wtime() - timeData);
 
     ! Update solution and residual
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
     call psb_geaxpby(V, -alpha, r, desc_a, info, upd_flag = .true.)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "AXPY ", timeData
+    axpyTime = axpyTime + (psb_wtime() - timeData);
 
     ! Check convergence. 
     if(psb_check_conv(methdfullname, itidx, x, r, desc_a, stopdat, info)) exit
@@ -250,17 +248,13 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     timeData = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "MPK ", timeData
+    mpkTime = mpkTime + (psb_wtime() - timeData);
 
     ! Compute rhs for beta
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     call psb_gedots(P, Q, beta, desc_a, info, .true.)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "DOT ", timeData
+    dotTime = dotTime + (psb_wtime() - timeData);
     beta = -beta;
 
     ! Solve for beta
@@ -275,9 +269,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "GRAM2D ", timeData
+    G2dTime = G2dTime + (psb_wtime() - timeData);
 
     ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
     call psb_barrier(ctxt)
@@ -286,14 +278,28 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_geaxpby(done, Z, done, temp_mv, P, desc_a, info)
     call psb_geaxpby(V, beta, temp_mv, desc_a, info, .false.)
     call psb_geaxpby(done, Q, done, temp_mv, V, desc_a, info)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "AXPY ", timeData
+    axpyTime = axpyTime + (psb_wtime() - timeData);
   end do
 
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
   if (present(err)) err = derr
   if (present(iter)) iter = iter * s
+
+  call psb_amx(ctxt, axpyTime)
+  call psb_amx(ctxt, dotTime)
+  call psb_amx(ctxt, mpkTime)
+  call psb_amx(ctxt, G1dTime)
+  call psb_amx(ctxt, G2dTime)
+  call psb_amx(ctxt, GfactTime)
+  call psb_amx(ctxt, GMatTime)
+  if(me == psb_root_) then
+    write(*, *) "AXPY ", axpyTime
+    write(*, *) "DOT ", dotTime
+    write(*, *) "MPK ", mpkTime
+    write(*, *) "GRAM1D ", G1dTime
+    write(*, *) "GRAM2D ", G2dTime
+    write(*, *) "MatFact ", GfactTime
+  end if
 
   if (info == psb_success_) call psb_gefree(r, desc_a, info)
   if (info == psb_success_) call psb_gefree(Z, desc_a, info)
@@ -452,6 +458,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! Timings
   real(psb_dpk_)  :: timeData
+  real(psb_dpk_)  :: axpyTime, dotTime, mpkTime, G2dTime, G1dTime, GMatTime, GfactTime
+  axpyTime = dzero
+  dotTime = dzero
+  mpkTime = dzero
+  G2dTime = dzero
+  G1dTime = dzero
+  GMatTime = dzero
+  GfactTime = dzero
 
   info = psb_success_
   call psb_erractionsave(err_act)
@@ -586,9 +600,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   ! First matrix power kernel
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
-  timeData = psb_wtime() - timeData;
-  call psb_amx(ctxt, timeData)
-  if(me == psb_root_) write(*, *) "MPK ", timeData
+  mpkTime = mpkTime + (psb_wtime() - timeData);
 
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
@@ -602,9 +614,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   call psb_gedots(P, V, temp_fa(:, 1 : s), desc_a, info, global = .false.)
   call psb_gedots(P, r, temp_fa(:, 2*s + 1), desc_a, info, global = .false.)
   call psb_sum(desc_a%get_context(), temp_fa)
-  timeData = psb_wtime() - timeData;
-  call psb_amx(ctxt, timeData)
-  if(me == psb_root_) write(*, *) "DOT ", timeData
+  dotTime = dotTime + (psb_wtime() - timeData);
 
   W = temp_fa(:, 1 : s)
   alpha = temp_fa(:, 2*s + 1)
@@ -616,9 +626,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     ! Factor matrix W (if soving with LU or Cholesky factorization)
     if(Gram_solver_ == lapackLU) call dgetrf(s, s, W, s, pW, info)
     if(Gram_solver_ == lapackCC) call dpotrf('L', s, W, s, info)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "MatFact ", timeData
+    GfactTime = GfactTime + (psb_wtime() - timeData);
 
     ! Solve for alpha
     call psb_barrier(ctxt)
@@ -632,18 +640,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "GRAM1D ", timeData
+    G1dTime = G1dTime + (psb_wtime() - timeData);
 
     ! Update solution and residual
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
     call psb_geaxpby(V, -alpha, r, desc_a, info, upd_flag = .true.)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "AXPY ", timeData
+    axpyTime = axpyTime + (psb_wtime() - timeData);
 
     ! Check convergence
     if(psb_check_conv(methdfullname, itidx, x, r, desc_a, stopdat, info)) exit
@@ -653,9 +657,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     timeData = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "MPK ", timeData
+    mpkTime = mpkTime + (psb_wtime() - timeData);
 
     ! Compute dot products
     call psb_barrier(ctxt)
@@ -664,9 +666,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_gedots(Z, Q, temp_fa(:, s+1 : 2*s), desc_a, info, global = .false.)
     call psb_gedots(Z, r, temp_fa(:, 2*s + 1), desc_a, info, global = .false.)
     call psb_sum(desc_a%get_context(), temp_fa)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "DOT ", timeData
+    dotTime = dotTime + (psb_wtime() - timeData);
 
     !Compute new rhs for beta
     B2 = -temp_fa(:, 1 : s)
@@ -684,9 +684,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "GRAM2D ", timeData
+    G2dTime = G2dTime + (psb_wtime() - timeData);
 
     ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
     call psb_barrier(ctxt)
@@ -695,18 +693,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_geaxpby(done, Z, done, temp_mv, P, desc_a, info)
     call psb_geaxpby(V, beta, temp_mv, desc_a, info, upd_flag = .false.)
     call psb_geaxpby(done, Q, done, temp_mv, V, desc_a, info)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "AXPY ", timeData
+    axpyTime = axpyTime + (psb_wtime() - timeData);
 
     !Compute new Gram 
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     W = temp_fa(:, s+1 : 2*s)
     call dgemm('T', 'N', s, s, s, -done, beta, s, B2, s, done, W, s)
-    timeData = psb_wtime() - timeData;
-    call psb_amx(ctxt, timeData)
-    if(me == psb_root_) write(*, *) "GRAM mat ", timeData
+    GMatTime = GMatTime + (psb_wtime() - timeData);
     
     !Compute new rhs for alpha
     alpha = temp_fa(:, 2*s + 1)
@@ -715,6 +709,23 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
   if (present(err)) err = derr
   if (present(iter)) iter = iter * s
+
+  call psb_amx(ctxt, axpyTime)
+  call psb_amx(ctxt, dotTime)
+  call psb_amx(ctxt, mpkTime)
+  call psb_amx(ctxt, G1dTime)
+  call psb_amx(ctxt, G2dTime)
+  call psb_amx(ctxt, GfactTime)
+  call psb_amx(ctxt, GMatTime)
+  if(me == psb_root_) then
+    write(*, *) "AXPY ", axpyTime
+    write(*, *) "DOT ", dotTime
+    write(*, *) "MPK ", mpkTime
+    write(*, *) "GRAM1D ", G1dTime
+    write(*, *) "GRAM2D ", G2dTime
+    write(*, *) "MatFact ", GfactTime
+    write(*, *) "GRAMmat ", GMatTime
+  end if
 
   if (info == psb_success_) call psb_gefree(r, desc_a, info)
   if (info == psb_success_) call psb_gefree(Z, desc_a, info)
