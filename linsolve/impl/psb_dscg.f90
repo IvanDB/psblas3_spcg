@@ -41,7 +41,10 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   integer(psb_ipk_)           :: itidx
   
   type(psb_itconv_type)         :: stopdat
-  real(psb_dpk_)                :: derr 
+  real(psb_dpk_)                :: derr
+
+  type(psb_d_multivect_type), target  :: aux_mv
+  real(psb_dpk_), allocatable, target :: aux_fa(:)
 
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
@@ -129,19 +132,21 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   end if
 
   !Allocate and assembly data structure
-  allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, s + 1), stat = info)
+  allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, s + 1), aux_fa(4*n_col), stat = info)
   if (info == psb_success_) call psb_geall(r, desc_a, info)
   if (info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(P, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
   if (info == psb_success_) call psb_geasb(r, desc_a, info)
   if (info == psb_success_) call psb_geasb(Z, desc_a, info)
   if (info == psb_success_) call psb_geasb(Q, desc_a, info)
   if (info == psb_success_) call psb_geasb(P, desc_a, info)
   if (info == psb_success_) call psb_geasb(V, desc_a, info)
   if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
 
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
@@ -190,9 +195,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   timeData = psb_wtime()
   ! First matrix power kernel
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
-                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
+                  & mvec_temp = aux_mv, farr_temp = aux_fa)
+                  
   mpkTime = mpkTime + (psb_wtime() - timeData);
-  
+
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
@@ -247,7 +254,9 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
-                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
+                  & mvec_temp = aux_mv, farr_temp = aux_fa)
+    
     mpkTime = mpkTime + (psb_wtime() - timeData);
 
     ! Compute rhs for beta
@@ -307,8 +316,9 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   if (info == psb_success_) call psb_gefree(P, desc_a, info)
   if (info == psb_success_) call psb_gefree(V, desc_a, info)
   if (info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
-  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, stat = info)
+  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, aux_fa, stat = info)
   if (info /= psb_success_) then
     call psb_errpush(info,name)
     goto 9999
@@ -452,6 +462,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   type(psb_itconv_type)         :: stopdat
   real(psb_dpk_)                :: derr 
 
+  type(psb_d_multivect_type), target  :: aux_mv
+  real(psb_dpk_), allocatable, target :: aux_fa(:)
+
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
@@ -538,19 +551,21 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   end if
 
   !Allocate and assembly data structure
-  allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, 2*s + 1), B2(s, s), c0(s), stat = info)
+  allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, 2*s + 1), B2(s, s), c0(s), aux_fa(4*n_col), stat = info)
   if (info == psb_success_) call psb_geall(r, desc_a, info)
   if (info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(P, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
   if (info == psb_success_) call psb_geasb(r, desc_a, info)
   if (info == psb_success_) call psb_geasb(Z, desc_a, info)
   if (info == psb_success_) call psb_geasb(Q, desc_a, info)
   if (info == psb_success_) call psb_geasb(P, desc_a, info)
   if (info == psb_success_) call psb_geasb(V, desc_a, info)
   if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
 
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
@@ -599,7 +614,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   timeData = psb_wtime()
   ! First matrix power kernel
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
-                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
+                  & mvec_temp = aux_mv, farr_temp = aux_fa)
+  
   mpkTime = mpkTime + (psb_wtime() - timeData);
 
   if (info /= psb_success_) then 
@@ -656,7 +673,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_barrier(ctxt)
     timeData = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
-                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3))
+                  & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
+                  & mvec_temp = aux_mv, farr_temp = aux_fa)
+    
     mpkTime = mpkTime + (psb_wtime() - timeData);
 
     ! Compute dot products
@@ -733,8 +752,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   if (info == psb_success_) call psb_gefree(P, desc_a, info)
   if (info == psb_success_) call psb_gefree(V, desc_a, info)
   if (info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
-  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, B2, c0, stat = info)
+  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, B2, c0, aux_fa, stat = info)
   if (info /= psb_success_) then
     call psb_errpush(info, name)
     goto 9999
