@@ -130,6 +130,14 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
   character(len=20)           :: name
   character(len=*), parameter :: methdname='CG'
 
+  ! Timings
+  real(psb_dpk_)  :: timeData
+  real(psb_dpk_)  :: axpyTime, dotTime, pApplyTime, SpMVTime
+  axpyTime = dzero
+  dotTime = dzero
+  pApplyTime = dzero
+  SpMVTime = dzero
+
   info = psb_success_
   name = 'psb_dcg'
   call psb_erractionsave(err_act)
@@ -150,11 +158,9 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
     goto 9999
   endif
 
-
   mglob = desc_a%get_global_rows()
   n_row = desc_a%get_local_rows()
   n_col = desc_a%get_local_cols()
-
 
   if (present(istop)) then 
     istop_ = istop 
@@ -243,10 +249,20 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
       it   = it + 1
       itx = itx + 1
 
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
       call prec%apply(r,z,desc_a,info,work=aux)
-      rho_old = rho
-      rho     = psb_gedot(r,z,desc_a,info)
+      pApplyTime = pApplyTime + (psb_wtime() - timeData);
 
+      rho_old = rho
+
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
+      rho     = psb_gedot(r,z,desc_a,info)
+      dotTime = dotTime + (psb_wtime() - timeData);
+
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
       if (it == 1) then
         call psb_geaxpby(done,z,dzero,p,desc_a,info)
       else
@@ -259,9 +275,18 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
         beta = rho/rho_old
         call psb_geaxpby(done,z,beta,p,desc_a,info)
       end if
+      axpyTime = axpyTime + (psb_wtime() - timeData);
 
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
       call psb_spmm(done,a,p,dzero,q,desc_a,info,work=aux)
+      SpMVTime = SpMVTime + (psb_wtime() - timeData);
+
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
       sigma = psb_gedot(p,q,desc_a,info)
+      dotTime = dotTime + (psb_wtime() - timeData);
+
       if (sigma == dzero) then
           if (debug_level >= psb_debug_ext_)&
                & write(debug_unit,*) me,' ',trim(name),&
@@ -281,9 +306,11 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
         end if
       end if
 
-
+      call psb_barrier(ctxt)
+      timeData = psb_wtime()
       call psb_geaxpby(alpha,p,done,x,desc_a,info)
       call psb_geaxpby(-alpha,q,done,r,desc_a,info)
+      axpyTime = axpyTime + (psb_wtime() - timeData);
 
       if (psb_check_conv(methdname,itx,x,r,desc_a,stopdat,info)) exit restart
       if (info /= psb_success_) Then 
@@ -316,6 +343,17 @@ subroutine psb_dcg_vect(a,prec,b,x,eps,desc_a,info,&
 
   call psb_end_conv(methdname,itx,desc_a,stopdat,info,derr,iter)
   if (present(err)) err = derr
+
+  call psb_amx(ctxt, axpyTime)
+  call psb_amx(ctxt, dotTime)
+  call psb_amx(ctxt, SpMVTime)
+  call psb_amx(ctxt, pApplyTime)
+  if(me == psb_root_) then
+    write(*, *) "AXPY ", axpyTime
+    write(*, *) "DOT ", dotTime
+    write(*, *) "SpMV ", SpMVTime
+    write(*, *) "APPLY ", pApplyTime
+  end if
 
   if (info == psb_success_) call psb_gefree(wwrk,desc_a,info)
   if (info == psb_success_) deallocate(aux,stat=info)
