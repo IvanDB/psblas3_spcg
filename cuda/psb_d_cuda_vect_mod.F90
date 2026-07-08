@@ -1773,14 +1773,15 @@ contains
   !!$    end select
   !!$  end subroutine d_cuda_multi_mlt_v_2
 
-  subroutine d_cuda_multi_set_scal(x, val)
+  subroutine d_cuda_multi_set_scal(x, val, rfirst, rlast)
     class(psb_d_multivect_cuda), intent(inout)  :: x
     real(psb_dpk_), intent(in)                  :: val
+    integer(psb_ipk_), optional :: rfirst, rlast
         
     integer(psb_ipk_) :: info
 
     if(x%is_dev()) call x%sync()
-    call x%psb_d_base_multivect_type%set_scal(val)
+    call x%psb_d_base_multivect_type%set_scal(val, rfirst = rfirst, rlast = rlast)
     call x%set_host()
   end subroutine d_cuda_multi_set_scal
 
