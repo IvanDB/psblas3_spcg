@@ -45,7 +45,7 @@ module psb_d_cuda_vect_mod
   integer(psb_ipk_), parameter, private :: is_sync = 0 
   integer(psb_ipk_), parameter, private :: is_dev  = 1 
   
-  type, extends(psb_d_base_vect_type) ::  psb_d_vect_cuda
+  type, extends(psb_d_base_vect_type) :: psb_d_vect_cuda
     integer                     :: state      = is_host
     type(c_ptr)                 :: deviceVect = c_null_ptr
     real(c_double), allocatable :: pinned_buffer(:)
@@ -1313,7 +1313,7 @@ module psb_d_cuda_multivect_mod
   integer(psb_ipk_), parameter, private :: is_sync = 0 
   integer(psb_ipk_), parameter, private :: is_dev  = 1 
   
-  type, extends(psb_d_base_multivect_type) ::  psb_d_multivect_cuda
+  type, extends(psb_d_base_multivect_type) :: psb_d_multivect_cuda
     integer(psb_ipk_)           :: state = is_host, m_nrows = 0, m_ncols = 0
     type(c_ptr)                 :: deviceVect = c_null_ptr
     real(c_double), allocatable :: buffer(:, :)
@@ -1358,7 +1358,62 @@ module psb_d_cuda_multivect_mod
     !
     procedure, pass(x) :: set_scal  => d_cuda_multi_set_scal
     procedure, pass(x) :: set_vect  => d_cuda_multi_set_vect
-    
+
+    ! 
+    ! AXPY - like operations 
+    ! 
+    ! single column export as vector
+    procedure, pass(x) :: extract_col   => d_cuda_mvect_extract_col
+    ! two term operations - indexed and full versions
+    procedure, pass(y) :: axpby_v_i     => d_cuda_mvect_axpby_v_idxs
+    procedure, pass(y) :: axpby_v_f     => d_cuda_mvect_axpby_v_full
+    procedure, pass(y) :: axpby_m_i     => d_cuda_mvect_axpby_m_idxs
+    procedure, pass(y) :: axpby_m_f     => d_cuda_mvect_axpby_m_full
+    ! two term operations with separate output mv
+    procedure, pass(z) :: axpby_m_f_o   => d_cuda_mvect_axpby_m_full_out
+    ! three term operations
+    procedure, pass(z) :: axpbycz_vv    => d_cuda_mvect_axpbycz_vv
+    procedure, pass(z) :: axpbycz_mv    => d_cuda_mvect_axpbycz_mv
+    procedure, pass(z) :: axpbycz_mm_i  => d_cuda_mvect_axpbycz_mm_idxs
+    procedure, pass(z) :: axpbycz_mm_f  => d_cuda_mvect_axpbycz_mm_full
+    ! three term operations with separate output mv
+    procedure, pass(w) :: axpbycz_mm_o  => d_cuda_mvect_axpbycz_mm_out
+    ! linear combinations of columns of the multivector (rename?)
+    procedure, pass(x) :: colspan1D     => d_cuda_mvect_colspan1D
+    procedure, pass(x) :: colspan2D     => d_cuda_mvect_colspan2D
+
+    ! 
+    ! DOT - like operations 
+    !
+    procedure, pass(x) :: dot_mm  => d_cuda_mvect_dot_mm
+    procedure, pass(x) :: dot_mv  => d_cuda_mvect_dot_mv
+
+    !
+    ! Element wise multiplications 
+    !
+    ! two input with in place output
+    procedure, pass(y) :: mlt_v_f    => d_cuda_mvect_mlt_v_full
+    procedure, pass(y) :: mlt_v_i    => d_cuda_mvect_mlt_v_idxs
+    procedure, pass(y) :: mlt_m_f    => d_cuda_mvect_mlt_m_full
+    procedure, pass(y) :: mlt_m_i    => d_cuda_mvect_mlt_m_idxs
+    ! two input with separate output
+    procedure, pass(z) :: mlt_vv_f_o  => d_cuda_mvect_mlt_vv_full_out
+    procedure, pass(z) :: mlt_vv_i_o  => d_cuda_mvect_mlt_vv_idxs_out
+    procedure, pass(z) :: mlt_vm_f_o  => d_cuda_mvect_mlt_vm_full_out
+    procedure, pass(z) :: mlt_vm_i_o  => d_cuda_mvect_mlt_vm_idxs_out
+    procedure, pass(z) :: mlt_mm_f_o  => d_cuda_mvect_mlt_mm_full_out
+    procedure, pass(z) :: mlt_mm_i_o  => d_cuda_mvect_mlt_mm_idxs_out
+    ! Element wise multiplication operations with externel vector output
+    procedure, pass(y) :: mlt_vm_e    => d_cuda_mvect_mlt_vm_ext
+    procedure, pass(y) :: mlt_mm_e    => d_cuda_mvect_mlt_mm_ext
+
+    !
+    ! Scaling and norms
+    !
+    procedure, pass(x) :: nrm2_f  => d_cuda_mvect_nrm2_full
+    procedure, pass(x) :: nrm2_i  => d_cuda_mvect_nrm2_idxs
+    ! procedure, pass(x) :: scal    => d_cuda_mvect_scal
+
     ! !
     ! ! OLD implementations
     ! ! Remove after we check there are really not used
@@ -1820,6 +1875,315 @@ contains
     call x%psb_d_base_multivect_type%set_vect(val)
     call x%set_host()
   end subroutine d_cuda_multi_set_vect
+
+  !!! NEW OP
+  subroutine d_cuda_mvect_extract_col(m, alpha, x, idx_x, beta, y, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m, idx_x
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    class(psb_d_base_vect_type), intent(inout)  :: y
+    integer(psb_ipk_), intent(out)              :: info
+  end subroutine d_cuda_mvect_extract_col
+
+  subroutine d_cuda_mvect_axpby_v_idxs(m, alpha, x, beta, y, idx_y, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m, idx_y
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x
+    class(psb_d_multivect_cuda), intent(inout)  :: y
+    integer(psb_ipk_), intent(out)              :: info
+  end subroutine d_cuda_mvect_axpby_v_idxs
+
+  subroutine d_cuda_mvect_axpby_v_full(m, alpha, x, beta, y, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x
+    class(psb_d_multivect_cuda), intent(inout)  :: y
+    integer(psb_ipk_), intent(out)              :: info
+  end subroutine d_cuda_mvect_axpby_v_full
+
+  subroutine d_cuda_mvect_axpby_m_idxs(m, alpha, x, idx_x, beta, y, idx_y, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m, idx_x, idx_y
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpby_m_idxs
+
+  subroutine d_cuda_mvect_axpby_m_full(m, alpha, x, beta, y, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpby_m_full
+
+  subroutine d_cuda_mvect_axpby_m_full_out(m, alpha, x, beta, y, z, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x, y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpby_m_full_out
+
+  subroutine d_cuda_mvect_axpbycz_vv(m, alpha, x, beta, y, gamma, z, idx_z, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m, idx_z
+    real(psb_dpk_), intent(in)                  :: alpha, beta, gamma
+    type(psb_d_base_vect_type), intent(inout)   :: x, y
+    class(psb_d_multivect_cuda), intent(inout)  :: z
+    integer(psb_ipk_), intent(out)              :: info
+  end subroutine d_cuda_mvect_axpbycz_vv
+
+  subroutine d_cuda_mvect_axpbycz_mv(m, alpha, x, beta, y, idx_y, gamma, z, idx_z, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m, idx_y, idx_z
+    real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
+    type(psb_d_base_vect_type), intent(inout)       :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpbycz_mv
+
+  subroutine d_cuda_mvect_axpbycz_mm_idxs(m, alpha, x, idx_x, beta, y, idx_y, z, gamma, idx_z, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m, idx_x, idx_y, idx_z
+    real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
+    class(psb_d_base_multivect_type), intent(inout) :: x, y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpbycz_mm_idxs
+
+  subroutine d_cuda_mvect_axpbycz_mm_full(m, alpha, x, beta, y, z, gamma, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
+    class(psb_d_base_multivect_type), intent(inout) :: x, y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpbycz_mm_full
+
+  subroutine d_cuda_mvect_axpbycz_mm_out(m, alpha, x, idx_x, beta, y, idx_y, gamma, z, idx_z, w, idx_w, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m, idx_x, idx_y, idx_z, idx_w
+    real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
+    class(psb_d_base_multivect_type), intent(inout) :: x, y, z
+    class(psb_d_multivect_cuda), intent(inout)      :: w
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_axpbycz_mm_out
+
+  subroutine d_cuda_mvect_colspan1D(m, x, coeff, y, info, upd_flag)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    real(psb_dpk_), intent(in)                  :: coeff(:)
+    class(psb_d_base_vect_type), intent(inout)  :: y 
+    integer(psb_ipk_), intent(out)              :: info
+    logical, intent(in)                         :: upd_flag
+  end subroutine d_cuda_mvect_colspan1D
+
+  subroutine d_cuda_mvect_colspan2D(m, x, coeff, y, info, upd_flag)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    class(psb_d_multivect_cuda), intent(inout)      :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    real(psb_dpk_), intent(in)                      :: coeff(:, :)
+    integer(psb_ipk_), intent(out)                  :: info
+    logical, intent(in)                             :: upd_flag
+  end subroutine d_cuda_mvect_colspan2D
+
+  subroutine d_cuda_mvect_dot_mm(m, x, y, res, info)
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    class(psb_d_multivect_cuda), intent(inout)      :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    real(psb_dpk_), intent(out)                     :: res(:, :)
+    integer(psb_ipk_), intent(out)                  :: info
+  end subroutine d_cuda_mvect_dot_mm
+
+  subroutine d_cuda_mvect_dot_mv(m, x, y, res, info)
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    class(psb_d_base_vect_type), intent(inout)  :: y
+    real(psb_dpk_), intent(out)                 :: res(:)
+    integer(psb_ipk_), intent(out)              :: info
+  end subroutine d_cuda_mvect_dot_mv
+
+  subroutine d_cuda_mvect_mlt_v_full(m, alpha, x, y, beta, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x
+    class(psb_d_multivect_cuda), intent(inout)  :: y
+    integer(psb_ipk_), intent(out)              :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_v_full
+
+  subroutine d_cuda_mvect_mlt_v_idxs(m, alpha, x, y, idx_y, beta, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x
+    class(psb_d_multivect_cuda), intent(inout)  :: y
+    integer(psb_ipk_), intent(in)               :: idx_y
+    integer(psb_ipk_), intent(out)              :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_v_idxs
+
+  subroutine d_cuda_mvect_mlt_m_full(m, alpha, x, y, beta, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_m_full
+
+  subroutine d_cuda_mvect_mlt_m_idxs(m, alpha, x, idx_x, y, idx_y, beta, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x
+    integer(psb_ipk_), intent(in)                   :: idx_x, idx_y
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_m_idxs
+
+  subroutine d_cuda_mvect_mlt_vv_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x, y
+    class(psb_d_multivect_cuda), intent(inout)  :: z
+    integer(psb_ipk_), intent(out)              :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_vv_full_out
+
+  subroutine d_cuda_mvect_mlt_vv_idxs_out(m, alpha, x, y, beta, z, idx_z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    real(psb_dpk_), intent(in)                  :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)  :: x, y
+    class(psb_d_multivect_cuda), intent(inout)  :: z
+    integer(psb_ipk_), intent(in)               :: idx_z
+    integer(psb_ipk_), intent(out)              :: info
+    character(len=1), intent(in), optional  :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_vv_idxs_out
+
+  subroutine d_cuda_mvect_mlt_vm_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)      :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_vm_full_out
+
+  subroutine d_cuda_mvect_mlt_vm_idxs_out(m, alpha, x, y, idx_y, beta, z, idx_z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)      :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    integer(psb_ipk_), intent(in)                   :: idx_y, idx_z
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_vm_idxs_out
+
+  subroutine d_cuda_mvect_mlt_mm_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x, y
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_mm_full_out
+
+  subroutine d_cuda_mvect_mlt_mm_idxs_out(m, alpha, x, idx_x, y, idx_y, beta, z, idx_z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x, y
+    integer(psb_ipk_), intent(in)                   :: idx_x, idx_y, idx_z
+    class(psb_d_multivect_cuda), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_mm_idxs_out
+
+  subroutine d_cuda_mvect_mlt_vm_ext(m, alpha, x, y, idx_y, beta, z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_vect_type), intent(inout)      :: x, z
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    integer(psb_ipk_), intent(in)                   :: idx_y
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_vm_ext
+
+  subroutine d_cuda_mvect_mlt_mm_ext(m, alpha, x, idx_x, y, idx_y, beta, z, info, conjgx, conjgy)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)                   :: m
+    real(psb_dpk_), intent(in)                      :: alpha, beta
+    class(psb_d_base_multivect_type), intent(inout) :: x
+    integer(psb_ipk_), intent(in)                   :: idx_x, idx_y
+    class(psb_d_multivect_cuda), intent(inout)      :: y
+    class(psb_d_base_vect_type), intent(inout)      :: z
+    integer(psb_ipk_), intent(out)                  :: info
+    character(len=1), intent(in), optional          :: conjgx, conjgy
+  end subroutine d_cuda_mvect_mlt_mm_ext
+
+  function d_cuda_mvect_nrm2_full(m, x) result(res)
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    real(psb_dpk_), allocatable :: res(:)
+  end function d_cuda_mvect_nrm2_full
+  
+  function d_cuda_mvect_nrm2_idxs(m, x, idx) result(res)
+    implicit none
+    integer(psb_ipk_), intent(in)               :: m
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    integer(psb_ipk_), intent(in)               :: idx
+    real(psb_dpk_)  :: res
+  end function d_cuda_mvect_nrm2_idxs
 
   !!$  subroutine d_cuda_multi_scal(alpha, x)
   !!$    implicit none
