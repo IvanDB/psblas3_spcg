@@ -1319,9 +1319,50 @@ module psb_d_cuda_multivect_mod
     real(c_double), allocatable :: buffer(:, :)
     type(c_ptr)                 :: dt_buf = c_null_ptr
   contains
+    !
+    !  Constructors/allocators
+    !
+    procedure, pass(x) :: bld_x => d_cuda_multi_bld_x
+    procedure, pass(x) :: bld_n => d_cuda_multi_bld_n
+    procedure, pass(x) :: all   => d_cuda_multi_all
+
+    !
+    ! Insert/set, assembly and free.
+    !
+    procedure, pass(x) :: ins   => d_cuda_multi_ins
+    procedure, pass(x) :: zero  => d_cuda_multi_zero
+    procedure, pass(x) :: asb   => d_cuda_multi_asb
+    procedure, pass(x) :: free  => d_cuda_multi_free
+
+    !
+    ! Basic info
+    !
     procedure, pass(x) :: get_nrows => d_cuda_multi_get_nrows
     procedure, pass(x) :: get_ncols => d_cuda_multi_get_ncols
     procedure, nopass  :: get_fmt   => d_cuda_multi_get_fmt
+
+    !
+    ! Sync: centerpiece of handling of external storage.
+    !
+    procedure, pass(x) :: sync        => d_cuda_multi_sync
+    procedure, pass(x) :: sync_space  => d_cuda_multi_sync_space
+    procedure, pass(x) :: is_host     => d_cuda_multi_is_host
+    procedure, pass(x) :: is_dev      => d_cuda_multi_is_dev
+    procedure, pass(x) :: is_sync     => d_cuda_multi_is_sync
+    procedure, pass(x) :: set_host    => d_cuda_multi_set_host
+    procedure, pass(x) :: set_dev     => d_cuda_multi_set_dev
+    procedure, pass(x) :: set_sync    => d_cuda_multi_set_sync
+
+    !
+    ! Set/get data from/to an external array
+    !
+    procedure, pass(x) :: set_scal  => d_cuda_multi_set_scal
+    procedure, pass(x) :: set_vect  => d_cuda_multi_set_vect
+    
+    ! !
+    ! ! OLD implementations
+    ! ! Remove after we check there are really not used
+    ! !
     !!$ procedure, pass(x) :: dot_v    => d_cuda_multi_dot_v
     !!$ procedure, pass(x) :: dot_a    => d_cuda_multi_dot_a
     !!$ procedure, pass(y) :: axpby_v  => d_cuda_multi_axpby_v
@@ -1334,27 +1375,11 @@ module psb_d_cuda_multivect_mod
     !!$ procedure, pass(x) :: nrm2     => d_cuda_multi_nrm2
     !!$ procedure, pass(x) :: amax     => d_cuda_multi_amax
     !!$ procedure, pass(x) :: asum     => d_cuda_multi_asum
-    procedure, pass(x) :: all      => d_cuda_multi_all
-    procedure, pass(x) :: zero     => d_cuda_multi_zero
-    procedure, pass(x) :: asb      => d_cuda_multi_asb
-    procedure, pass(x) :: sync     => d_cuda_multi_sync
-    procedure, pass(x) :: sync_space => d_cuda_multi_sync_space
-    procedure, pass(x) :: bld_x    => d_cuda_multi_bld_x
-    procedure, pass(x) :: bld_n    => d_cuda_multi_bld_n
-    procedure, pass(x) :: free     => d_cuda_multi_free
-    procedure, pass(x) :: ins      => d_cuda_multi_ins
-    procedure, pass(x) :: is_host  => d_cuda_multi_is_host
-    procedure, pass(x) :: is_dev   => d_cuda_multi_is_dev
-    procedure, pass(x) :: is_sync  => d_cuda_multi_is_sync
-    procedure, pass(x) :: set_host => d_cuda_multi_set_host
-    procedure, pass(x) :: set_dev  => d_cuda_multi_set_dev
-    procedure, pass(x) :: set_sync => d_cuda_multi_set_sync
-    procedure, pass(x) :: set_scal => d_cuda_multi_set_scal
-    procedure, pass(x) :: set_vect => d_cuda_multi_set_vect
+
     !!$ procedure, pass(x) :: gthzv_x  => d_cuda_multi_gthzv_x
     !!$ procedure, pass(y) :: sctb     => d_cuda_multi_sctb
     !!$ procedure, pass(y) :: sctb_x   => d_cuda_multi_sctb_x
-    final              :: d_cuda_multi_vect_finalize
+    final :: d_cuda_multi_vect_finalize
   end type psb_d_multivect_cuda
 
   public  :: psb_d_multivect_cuda

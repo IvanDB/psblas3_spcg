@@ -2605,8 +2605,8 @@ module psb_d_base_multivect_mod
     procedure, pass(x) :: all      => d_base_mlv_all
     procedure, pass(x) :: mold     => d_base_mlv_mold
     
-    
-    ! Insert/set. Assembly and free.
+    !
+    ! Insert/set, assembly and free.
     ! Assembly does almost nothing here, but is important
     ! in derived classes.
     !
@@ -2678,9 +2678,9 @@ module psb_d_base_multivect_mod
     ! generic, public    :: axpby    => axpby_v, axpby_a
 
 
-    !! 
-    !! AXPY - like operations 
-    !! 
+    ! 
+    ! AXPY - like operations 
+    ! 
     ! single column export as vector
     procedure, pass(x) :: extract_col   => d_base_mvect_extract_col
     ! two term operations - indexed and full versions
@@ -2709,17 +2709,17 @@ module psb_d_base_multivect_mod
                                             axpbycz_mm_f, axpbycz_mm_o, &
                                             colspan1D, colspan2D
 
-    !! 
-    !! DOT - like operations 
-    !!
+    ! 
+    ! DOT - like operations 
+    !
     ! only full-full version for now
     procedure, pass(x) :: dot_mm   => d_base_mvect_dot_mm
     procedure, pass(x) :: dot_mv   => d_base_mvect_dot_mv
     generic, public    :: dotsbr   => dot_mm, dot_mv
 
-    !! 
-    !! Element wise multiplications 
-    !!
+    !
+    ! Element wise multiplications 
+    !
     ! two input with in place output
     procedure, pass(y) :: mlt_v_f    => d_base_mvect_mlt_v_full
     procedure, pass(y) :: mlt_v_i    => d_base_mvect_mlt_v_idxs
@@ -2769,8 +2769,8 @@ module psb_d_base_multivect_mod
     generic, public     :: nrm2   => nrm2_f, nrm2_i
 
     ! OLD ones
-    procedure, pass(x) :: scal     => d_base_mlv_scal
     ! procedure, pass(x) :: nrm2     => d_base_mlv_nrm2
+    procedure, pass(x) :: scal     => d_base_mlv_scal
     procedure, pass(x) :: amax     => d_base_mlv_amax
     procedure, pass(x) :: asum     => d_base_mlv_asum
     procedure, pass(x) :: absval1  => d_base_mlv_absval1
