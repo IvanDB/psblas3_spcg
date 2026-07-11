@@ -39,16 +39,16 @@
 
 struct MultiVectDevice
 {
-  // number of vectors
+  //Number of vectors
   int count_;
 
-  //number of elements for a single vector
+  //Number of elements for a single vector
   int size_;
 
-  //pithc in number of elements
+  //Pitch in number of elements
   int pitch_;
 
-  // Vectors in device memory (single allocation)
+  //Vectors in device memory (single allocation)
   void *v_;
 };
 

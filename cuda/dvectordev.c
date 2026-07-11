@@ -345,3 +345,16 @@ int absMultiVecDeviceDouble(int n, double alpha, void *deviceVecA)
   return(i);
 }
 
+
+
+
+int axpbyMultiVecDeviceDouble(int n, double alpha, void* devVecX, double beta, void* devVecY) {}
+int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY) {}
+int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY) {}
+int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY) {}
+int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devVecX, double beta, void* devVecY, void* devVecZ) {}
+int axpbyMultiVecDeviceDouble6(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ, int idxZ) {}
+int axpbyMultiVecDeviceDouble7(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ) {}
+int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ) {}
+int axpbyMultiVecDeviceDouble9(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ) {}
+int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW) {}

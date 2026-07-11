@@ -68,7 +68,6 @@ int amaxMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 int asumMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 int dotMultiVecDeviceDouble(double* y_res, int n, void* devVecA, void* devVecB);
 
-int axpbyMultiVecDeviceDouble(int n, double alpha, void* devVecX, double beta, void* devVecY);
 int upd_xyzMultiVecDeviceDouble(int n,double alpha,double beta, double gamma, double delta, 
 				void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ);
 int xyzwMultiVecDeviceDouble(int n,double a, double b, double c, double d, double e, double f, 
@@ -79,4 +78,16 @@ int axybzMultiVecDeviceDouble(int n, double alpha, void *deviceVecA,
 			      void *deviceVecB, double beta, void *deviceVecZ);
 int absMultiVecDeviceDouble(int n, double alpha, void *deviceVecA);
 int absMultiVecDeviceDouble2(int n, double alpha, void *deviceVecA, void *deviceVecB);
+
+
+int axpbyMultiVecDeviceDouble(int n, double alpha, void* devVecX, double beta, void* devVecY);
+int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY);
+int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY);
+int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY);
+int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devVecX, double beta, void* devVecY, void* devVecZ);
+int axpbyMultiVecDeviceDouble6(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ, int idxZ);
+int axpbyMultiVecDeviceDouble7(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);
+int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);
+int axpbyMultiVecDeviceDouble9(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ);
+int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW);
 

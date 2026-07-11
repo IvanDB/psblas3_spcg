@@ -1885,6 +1885,24 @@ contains
     class(psb_d_multivect_cuda), intent(inout)  :: x
     class(psb_d_base_vect_type), intent(inout)  :: y
     integer(psb_ipk_), intent(out)              :: info
+
+    select type(y)
+      type is(psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = axpbyMultiVecDevice(m, alpha, x%deviceVect, idx_x, beta, y%deviceVect)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call x%psb_d_base_multivect_type%axpby(m, alpha, idx_x, beta, y, info)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_extract_col
 
   subroutine d_cuda_mvect_axpby_v_idxs(m, alpha, x, beta, y, idx_y, info)
@@ -1895,6 +1913,24 @@ contains
     class(psb_d_base_vect_type), intent(inout)  :: x
     class(psb_d_multivect_cuda), intent(inout)  :: y
     integer(psb_ipk_), intent(out)              :: info
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect, idx_y)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%axpby(m, alpha, x, beta, idx_y, info)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_axpby_v_idxs
 
   subroutine d_cuda_mvect_axpby_v_full(m, alpha, x, beta, y, info)
@@ -1905,6 +1941,24 @@ contains
     class(psb_d_base_vect_type), intent(inout)  :: x
     class(psb_d_multivect_cuda), intent(inout)  :: y
     integer(psb_ipk_), intent(out)              :: info
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%axpby(m, alpha, x, beta, info)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_axpby_v_full
 
   subroutine d_cuda_mvect_axpby_m_idxs(m, alpha, x, idx_x, beta, y, idx_y, info)
@@ -1915,6 +1969,24 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x
     class(psb_d_multivect_cuda), intent(inout)      :: y
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = axpbyMultiVecDevice(m, alpha, x%deviceVect, idx_x, beta, y%deviceVect, idx_y)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+    
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%axpby(m, alpha, idx_x, x, beta, idx_y, info)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_axpby_m_idxs
 
   subroutine d_cuda_mvect_axpby_m_full(m, alpha, x, beta, y, info)
@@ -1925,6 +1997,24 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x
     class(psb_d_multivect_cuda), intent(inout)      :: y
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%axpby(m, alpha, x, beta, info)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_axpby_m_full
 
   subroutine d_cuda_mvect_axpby_m_full_out(m, alpha, x, beta, y, z, info)
@@ -1935,6 +2025,30 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect, z%deviceVect)
+            if(info == psb_success_) call z%set_dev()
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call z%psb_d_base_multivect_type%axpby(m, alpha, x, beta, y, info)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_axpby_m_full_out
 
   subroutine d_cuda_mvect_axpbycz_vv(m, alpha, x, beta, y, gamma, z, idx_z, info)
@@ -1945,6 +2059,31 @@ contains
     type(psb_d_base_vect_type), intent(inout)   :: x, y
     class(psb_d_multivect_cuda), intent(inout)  :: z
     integer(psb_ipk_), intent(out)              :: info
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_vect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+            info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect, gamma, z%deviceVect, idx_z)
+            if(info == psb_success_) call z%set_dev()
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%axpby(m, alpha, x, beta, y, gamma, idx_z, info)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_axpbycz_vv
 
   subroutine d_cuda_mvect_axpbycz_mv(m, alpha, x, beta, y, idx_y, gamma, z, idx_z, info)
@@ -1956,6 +2095,31 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: y
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+            info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect, idx_y, gamma, z%deviceVect, idx_z)
+            if(info == psb_success_) call z%set_dev()
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%axpby(m, alpha, x, beta, y, idx_y, gamma, idx_z, info)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_axpbycz_mv
 
   subroutine d_cuda_mvect_axpbycz_mm_idxs(m, alpha, x, idx_x, beta, y, idx_y, z, gamma, idx_z, info)
@@ -1966,6 +2130,31 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+            info = axpbyMultiVecDevice(m, alpha, x%deviceVect, idx_x, beta, y%deviceVect, idx_y, gamma, z%deviceVect, idx_z)
+            if(info == psb_success_) call z%set_dev()
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%axpby(m, alpha, x, idx_x, beta, y, idx_y, gamma, idx_z, info)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_axpbycz_mm_idxs
 
   subroutine d_cuda_mvect_axpbycz_mm_full(m, alpha, x, beta, y, z, gamma, info)
@@ -1976,6 +2165,31 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+            info = axpbyMultiVecDevice(m, alpha, x%deviceVect, beta, y%deviceVect, gamma, z%deviceVect)
+            if(info == psb_success_) call z%set_dev()
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%axpby(m, alpha, x, beta, y, gamma, info)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_axpbycz_mm_full
 
   subroutine d_cuda_mvect_axpbycz_mm_out(m, alpha, x, idx_x, beta, y, idx_y, gamma, z, idx_z, w, idx_w, info)
@@ -1986,6 +2200,40 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z
     class(psb_d_multivect_cuda), intent(inout)      :: w
     integer(psb_ipk_), intent(out)                  :: info
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            select type(z)
+              type is(psb_d_multivect_cuda)
+                if(x%is_host()) call x%sync()
+                if(y%is_host()) call y%sync()
+                if(z%is_host()) call z%sync()
+                if(w%is_host()) call w%sync()
+                info = axpbyMultiVecDevice(m, alpha, x%deviceVect, idx_x, beta, y%deviceVect, idx_y, &
+                                                      & gamma, z%deviceVect, idx_z, w%deviceVect, idx_w)
+                if(info == psb_success_) call w%set_dev()
+
+              class default
+                goto 9999
+            end select
+
+          class default
+            goto 9999
+        end select
+
+      class default
+        goto 9999
+    end select
+
+  9999: 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    if(w%is_dev()) call w%sync()
+    call w%psb_d_base_multivect_type%axpby(m, alpha, x, idx_x, beta, y, idx_y, gamma, z, idx_z, idx_w, info)
+    if(info == psb_success_) call w%set_host()
   end subroutine d_cuda_mvect_axpbycz_mm_out
 
   subroutine d_cuda_mvect_colspan1D(m, x, coeff, y, info, upd_flag)
@@ -1997,6 +2245,12 @@ contains
     class(psb_d_base_vect_type), intent(inout)  :: y 
     integer(psb_ipk_), intent(out)              :: info
     logical, intent(in)                         :: upd_flag
+
+    !TODO: export operation to GPU
+    if(x%is_dev()) call x%sync()
+    if((upd_flag) .and. (y%is_dev())) call y%sync()
+    call x%psb_d_base_multivect_type%axpby(m, coeff, y, info, upd_flag)
+    call y%set_host()
   end subroutine d_cuda_mvect_colspan1D
 
   subroutine d_cuda_mvect_colspan2D(m, x, coeff, y, info, upd_flag)
@@ -2008,6 +2262,12 @@ contains
     real(psb_dpk_), intent(in)                      :: coeff(:, :)
     integer(psb_ipk_), intent(out)                  :: info
     logical, intent(in)                             :: upd_flag
+
+    !TODO: export operation to GPU
+    if(x%is_dev()) call x%sync()
+    if((upd_flag) .and. (y%is_dev())) call y%sync()
+    call x%psb_d_base_multivect_type%axpby(m, coeff, y, info, upd_flag)
+    call y%set_host()
   end subroutine d_cuda_mvect_colspan2D
 
   subroutine d_cuda_mvect_dot_mm(m, x, y, res, info)
@@ -2321,8 +2581,8 @@ contains
         end if
       end if
     else if(x%is_dev()) then 
-      md  = getMultiVecDevicePitch(x%deviceVect)
-      nd  = getMultiVecDeviceCount(x%deviceVect)
+      md = getMultiVecDevicePitch(x%deviceVect)
+      nd = getMultiVecDeviceCount(x%deviceVect)
       if((mh /= md) .or. (nh /= nd)) then 
         call psb_realloc(getMultiVecDevicePitch(x%deviceVect), &
                           & getMultiVecDeviceCount(x%deviceVect), x%v, info, pad = dzero)
@@ -2338,7 +2598,7 @@ contains
     info = psb_success_
 
     if(x%is_host()) then 
-      if(.not.c_associated(x%deviceVect)) call x%sync_space(info)
+      if(.not. c_associated(x%deviceVect)) call x%sync_space(info)
       if(info == psb_success_) info = writeMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))
     else if(x%is_dev()) then 
       info = readMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))

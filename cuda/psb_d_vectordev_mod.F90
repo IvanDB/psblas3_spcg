@@ -301,6 +301,89 @@ module psb_d_vectordev_mod
       type(c_ptr), value    :: deviceVecA, deviceVecB
       integer(c_int)  :: res
     end function axpbyMultiVecDeviceDouble
+
+    function axpbyMultiVecDeviceDouble2(n, alpha, deviceVecA, idxA, beta, deviceVecB) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble2')
+      use iso_c_binding
+      integer(c_int), value :: n, idxA
+      real(c_double), value :: alpha, beta
+      type(c_ptr), value    :: deviceVecA, deviceVecB
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble2
+
+    function axpbyMultiVecDeviceDouble3(n, alpha, deviceVecA, beta, deviceVecB, idxB) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble3')
+      use iso_c_binding
+      integer(c_int), value :: n, idxB
+      real(c_double), value :: alpha, beta
+      type(c_ptr), value    :: deviceVecA, deviceVecB
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble3
+
+    function axpbyMultiVecDeviceDouble4(n, alpha, deviceVecA, idxA, beta, deviceVecB, idxB) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble4')
+      use iso_c_binding
+      integer(c_int), value :: n, idxA, idxB
+      real(c_double), value :: alpha, beta
+      type(c_ptr), value    :: deviceVecA, deviceVecB
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble4
+
+    function axpbyMultiVecDeviceDouble5(n, alpha, deviceVecA, beta, deviceVecB, deviceVecC) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble5')
+      use iso_c_binding
+      integer(c_int), value :: n
+      real(c_double), value :: alpha, beta
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble5
+
+    function axpbyMultiVecDeviceDouble6(n, alpha, deviceVecA, beta, deviceVecB, gamma, deviceVecC, idxC) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble6')
+      use iso_c_binding
+      integer(c_int), value :: n, idxC
+      real(c_double), value :: alpha, beta, gamma
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble6
+
+    function axpbyMultiVecDeviceDouble7(n, alpha, deviceVecA, beta, deviceVecB, gamma, idxB, deviceVecC, idxC) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble7')
+      use iso_c_binding
+      integer(c_int), value :: n, idxB, idxC
+      real(c_double), value :: alpha, beta, gamma
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble7
+
+    function axpbyMultiVecDeviceDouble8(n, alpha, deviceVecA, idxA, beta, deviceVecB, gamma, idxB, deviceVecC, idxC) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble8')
+      use iso_c_binding
+      integer(c_int), value :: n, idxA, idxB, idxC
+      real(c_double), value :: alpha, beta, gamma
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble8
+
+    function axpbyMultiVecDeviceDouble9(n, alpha, deviceVecA, beta, deviceVecB, gamma, deviceVecC) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDouble9')
+      use iso_c_binding
+      integer(c_int), value :: n
+      real(c_double), value :: alpha, beta, gamma
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDouble9
+
+    function axpbyMultiVecDeviceDoubleO(n, alpha, deviceVecA, idxA, beta, deviceVecB, idxB, &
+                                          & gamma, deviceVecC, idxC, deviceVecD, idxD) result(res) &
+            & bind(c, name = 'axpbyMultiVecDeviceDoubleO')
+      use iso_c_binding
+      integer(c_int), value :: n, idxA, idxB, idxC, idxD
+      real(c_double), value :: alpha, beta, gamma
+      type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC, deviceVecD
+      integer(c_int)  :: res
+    end function axpbyMultiVecDeviceDoubleO
+
   end interface
 
   interface upd_xyzMultiVecDevice
