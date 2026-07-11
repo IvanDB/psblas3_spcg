@@ -3829,11 +3829,11 @@ contains
     implicit none
     integer(psb_ipk_), intent(in)                   :: m, idx_z
     real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
-    type(psb_d_base_vect_type), intent(inout)       :: x, y
+    class(psb_d_base_vect_type), intent(inout)      :: x, y
     class(psb_d_base_multivect_type), intent(inout) :: z
     integer(psb_ipk_), intent(out)                  :: info
 
-    ! The type check is enforced via the argument types
+    !TODO: type check
     call psb_geaxpby(m, alpha, x%v, beta, y%v, gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_vv
 
@@ -3843,11 +3843,11 @@ contains
     implicit none
     integer(psb_ipk_), intent(in)                   :: m, idx_y, idx_z
     real(psb_dpk_), intent(in)                      :: alpha, beta, gamma
-    type(psb_d_base_vect_type), intent(inout)       :: x
+    class(psb_d_base_vect_type), intent(inout)      :: x
     class(psb_d_base_multivect_type), intent(inout) :: y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    ! The type check is enforced via the argument types
+    !TODO: type check
     call psb_geaxpby(m, alpha, x%v, beta, y%v(:, idx_y), gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_mv
 
@@ -3859,7 +3859,7 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    ! The type check is enforced via the argument types
+    !TODO: type check
     call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_mm_idxs
 
@@ -3887,7 +3887,7 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z, w
     integer(psb_ipk_), intent(out)                  :: info
 
-    ! The type check is enforced via the argument types
+    !TODO: type check
     call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), gamma, z%v(:, idx_z), w%v(:, idx_w), info)
   end subroutine d_base_mvect_axpbycz_mm_out
 
@@ -3924,7 +3924,6 @@ contains
 
     ! BUG? Why ONLY here needs size as leading dimension?
     call dgemv('N', m, nc, done, x%v, size(x%v, 1), coeff, 1, beta, y%v, 1)
-
   end subroutine d_base_mvect_colspan1D
 
   subroutine d_base_mvect_colspan2D(m, x, coeff, y, info, upd_flag)

@@ -347,7 +347,7 @@ module psb_d_vectordev_mod
       integer(c_int)  :: res
     end function axpbyMultiVecDeviceDouble6
 
-    function axpbyMultiVecDeviceDouble7(n, alpha, deviceVecA, beta, deviceVecB, gamma, idxB, deviceVecC, idxC) result(res) &
+    function axpbyMultiVecDeviceDouble7(n, alpha, deviceVecA, beta, deviceVecB, idxB, gamma, deviceVecC, idxC) result(res) &
             & bind(c, name = 'axpbyMultiVecDeviceDouble7')
       use iso_c_binding
       integer(c_int), value :: n, idxB, idxC
@@ -356,7 +356,7 @@ module psb_d_vectordev_mod
       integer(c_int)  :: res
     end function axpbyMultiVecDeviceDouble7
 
-    function axpbyMultiVecDeviceDouble8(n, alpha, deviceVecA, idxA, beta, deviceVecB, gamma, idxB, deviceVecC, idxC) result(res) &
+    function axpbyMultiVecDeviceDouble8(n, alpha, deviceVecA, idxA, beta, deviceVecB, idxB, gamma, deviceVecC, idxC) result(res) &
             & bind(c, name = 'axpbyMultiVecDeviceDouble8')
       use iso_c_binding
       integer(c_int), value :: n, idxA, idxB, idxC
@@ -383,7 +383,6 @@ module psb_d_vectordev_mod
       type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC, deviceVecD
       integer(c_int)  :: res
     end function axpbyMultiVecDeviceDoubleO
-
   end interface
 
   interface upd_xyzMultiVecDevice
