@@ -8,7 +8,6 @@
  *
  */
 
-
 /*! \mainpage The spGPU library documentation
  *
  * \section intro_sec Introduction
@@ -59,9 +58,9 @@ typedef int spgpuStatus_t;
 /// Code to identify a primitive type
 typedef int spgpuType_t;
 
-#define SPGPU_TYPE_INT			0
-#define SPGPU_TYPE_FLOAT		1
-#define SPGPU_TYPE_DOUBLE		2
+#define SPGPU_TYPE_INT				0
+#define SPGPU_TYPE_FLOAT			1
+#define SPGPU_TYPE_DOUBLE			2
 #define SPGPU_TYPE_COMPLEX_FLOAT	3
 #define SPGPU_TYPE_COMPLEX_DOUBLE	4
 
@@ -69,22 +68,28 @@ typedef int spgpuType_t;
 typedef struct spgpuHandleStruct {
 	/// the current stream used by every calls on spgpu routines (passing this handle)
 	cudaStream_t currentStream;
+
 	/// the default stream, created during the handle creation.
 	cudaStream_t defaultStream;
 	/// the device associated to this handle
 	int device;
+
 	/// the warp size for this device
 	int warpSize;
+
 	/// the max threads per block count for this device
 	int maxThreadsPerBlock;
+
 	/// the max size for the X coordinate of the grid dimensions
 	int maxGridSizeX;
 	/// the max size for the Y coordinate of the grid dimensions
 	int maxGridSizeY;
 	/// the max size for the Z coordinate of the grid dimensions
 	int maxGridSizeZ;
-        /// Number of SM
-        int multiProcessorCount;
+
+	/// Number of SM
+	int multiProcessorCount;
+
 	// compute capability
 	int capabilityMajor;
 	int capabilityMinor;
@@ -157,14 +162,15 @@ int baseIndex;
 } spgpuMatrixDesc_t
 */
 
-#define cuFloatComplex_isZero(a) (a.x == 0.0f && a.y == 0.0f)
-#define cuDoubleComplex_isZero(a) (a.x == 0.0 && a.y == 0.0)
-#define cuFloatComplex_isNotZero(a) (a.x != 0.0f || a.y != 0.0f)
-#define cuDoubleComplex_isNotZero(a) (a.x != 0.0 || a.y != 0.0)
+#define cuFloatComplex_isZero(a) 		(a.x == 0.0f && a.y == 0.0f)
+#define cuDoubleComplex_isZero(a) 		(a.x == 0.0  && a.y == 0.0)
+#define cuFloatComplex_isNotZero(a) 	(a.x != 0.0f || a.y != 0.0f)
+#define cuDoubleComplex_isNotZero(a) 	(a.x != 0.0  || a.y != 0.0)
 
 #ifdef __cplusplus
 }
 #endif
 
-/** @}*/
-
+/** 
+ * @}
+ */
