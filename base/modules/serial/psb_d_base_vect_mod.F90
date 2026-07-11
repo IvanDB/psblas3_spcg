@@ -2712,7 +2712,6 @@ module psb_d_base_multivect_mod
     ! 
     ! DOT - like operations 
     !
-    ! only full-full version for now
     procedure, pass(x) :: dot_mm   => d_base_mvect_dot_mm
     procedure, pass(x) :: dot_mv   => d_base_mvect_dot_mv
     generic, public    :: dotsbr   => dot_mm, dot_mv
