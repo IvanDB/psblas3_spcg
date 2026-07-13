@@ -28,7 +28,6 @@
 !    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 !    POSSIBILITY OF SUCH DAMAGE.
 !   
-  
 
 module psb_d_cuda_vect_mod
   use iso_c_binding
@@ -1223,7 +1222,6 @@ contains
     end select
   end subroutine d_cuda_absval2
 
-
   subroutine d_cuda_vect_finalize(x)
     use psi_serial_mod
     use psb_realloc_mod
@@ -1293,7 +1291,6 @@ contains
     call x%set_host()
   end subroutine d_cuda_ins_a
 end module psb_d_cuda_vect_mod
-
 
 !
 ! Multivectors
@@ -1538,7 +1535,6 @@ contains
   !!$    end select
   !!$  end subroutine d_cuda_multi_sctb_x
 
-
   subroutine d_cuda_multi_bld_x(x, this)
     use psb_base_mod
     class(psb_d_multivect_cuda), intent(inout)  :: x
@@ -1570,27 +1566,191 @@ contains
     call x%asb(m, n, info, scratch = scratch)
     if(info /= psb_success_) call psb_errpush(info, 'd_cuda_multi_bld_n', i_err = (/m, n, n, n, n/))
   end subroutine d_cuda_multi_bld_n
+  
+  subroutine d_cuda_multi_all(m, n, x, info)
+    use psi_serial_mod
+    use psb_realloc_mod
+    implicit none
+    integer(psb_ipk_), intent(in)             :: m, n
+    class(psb_d_multivect_cuda), intent(out)  :: x
+    integer(psb_ipk_), intent(out)            :: info
+    
+    call psb_realloc(m, n, x%v, info, pad = dzero)
+    x%m_nrows = m
+    x%m_ncols = n
+    if(info == psb_success_) call x%set_host()
+    if(info == psb_success_) call x%sync_space(info)
+    if(info /= psb_success_) then 
+      info = psb_err_alloc_request_
+      call psb_errpush(info, 'd_cuda_multi_all', i_err = (/m, n, n, n, n/))
+    end if
+  end subroutine d_cuda_multi_all
 
-  subroutine d_cuda_multi_set_host(x)
+  subroutine d_cuda_multi_ins(n, irl, val, dupl, x, maxr, info)
+    use psi_serial_mod
+    implicit none
+    integer(psb_ipk_), intent(in)               :: n, dupl, maxr
+    integer(psb_ipk_), intent(in)               :: irl(:)
+    real(psb_dpk_), intent(in)                  :: val(:, :)
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    integer(psb_ipk_), intent(out)              :: info
+
+    info = psb_success_
+    if(x%is_dev()) call x%sync()
+    call x%psb_d_base_multivect_type%ins(n, irl, val, dupl, maxr, info)
+    call x%set_host()
+  end subroutine d_cuda_multi_ins
+
+  subroutine d_cuda_multi_zero(x)
+    use psi_serial_mod
     implicit none
     class(psb_d_multivect_cuda), intent(inout) :: x
     
-    x%state = is_host
-  end subroutine d_cuda_multi_set_host
+    if(allocated(x%v)) x%v = dzero
+    call x%set_host()
+  end subroutine d_cuda_multi_zero
 
-  subroutine d_cuda_multi_set_dev(x)
+  subroutine d_cuda_multi_asb(m, n, x, info, scratch)
+    use psi_serial_mod
+    use psb_realloc_mod
     implicit none
-    class(psb_d_multivect_cuda), intent(inout) :: x
-    
-    x%state = is_dev
-  end subroutine d_cuda_multi_set_dev
+    integer(psb_ipk_), intent(in)               :: m, n
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    integer(psb_ipk_), intent(out)              :: info
+    logical, intent(in), optional               :: scratch
 
-  subroutine d_cuda_multi_set_sync(x)
+    integer(psb_ipk_) :: nd, nc
+
+    info = psb_success_
+    x%m_nrows = m
+    x%m_ncols = n
+    if(x%is_host()) then 
+      call x%psb_d_base_multivect_type%asb(m, n, info, scratch)
+      if(info == psb_success_) call x%sync_space(info)
+    else if(x%is_dev()) then 
+      nd = getMultiVecDevicePitch(x%deviceVect)
+      nc = getMultiVecDeviceCount(x%deviceVect)
+      if((nd < m) .or. (nc < n)) then 
+        call x%sync()
+        call x%psb_d_base_multivect_type%asb(m, n, info)      
+        if(info == psb_success_) call x%sync_space(info)
+        call x%set_host()
+      end if
+    end if
+  end subroutine d_cuda_multi_asb
+
+  subroutine d_cuda_multi_free(x, info)
+    use psi_serial_mod
+    use psb_realloc_mod
     implicit none
-    class(psb_d_multivect_cuda), intent(inout) :: x
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    integer(psb_ipk_), intent(out)              :: info
     
-    x%state = is_sync
-  end subroutine d_cuda_multi_set_sync
+    info = psb_success_
+    if(c_associated(x%deviceVect)) then 
+      call freeMultiVecDevice(x%deviceVect)
+      x%deviceVect = c_null_ptr
+    end if
+
+    if(allocated(x%buffer)) then 
+      !!$ call inner_unregister(x%buffer)
+      deallocate(x%buffer, stat = info)
+    end if
+
+    if(allocated(x%v)) deallocate(x%v, stat = info)
+    call x%set_sync()
+  end subroutine d_cuda_multi_free
+
+  function d_cuda_multi_get_nrows(x) result(res)
+    implicit none
+    class(psb_d_multivect_cuda), intent(in) :: x
+    integer(psb_ipk_) :: res
+
+    res = x%m_nrows
+  end function d_cuda_multi_get_nrows
+  
+  function d_cuda_multi_get_ncols(x) result(res)
+    implicit none
+    class(psb_d_multivect_cuda), intent(in) :: x
+    integer(psb_ipk_) :: res
+
+    res = x%m_ncols
+  end function d_cuda_multi_get_ncols
+
+  function d_cuda_multi_get_fmt() result(res)
+    implicit none
+    character(len=5) :: res
+    res = 'dGPU'
+  end function d_cuda_multi_get_fmt
+
+  subroutine d_cuda_multi_sync(x)
+    implicit none
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+
+    integer(psb_ipk_) :: n, info
+    info = psb_success_
+
+    if(x%is_host()) then 
+      if(.not. c_associated(x%deviceVect)) call x%sync_space(info)
+      if(info == psb_success_) info = writeMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))
+    else if(x%is_dev()) then 
+      info = readMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))
+    end if
+
+    if(info == psb_success_) call x%set_sync()
+
+    if(info /= psb_success_) then
+      info = psb_err_internal_error_
+      call psb_errpush(info, 'd_cuda_multi_sync')
+    end if
+  end subroutine d_cuda_multi_sync
+
+  subroutine d_cuda_multi_sync_space(x, info)
+    use psb_realloc_mod
+    implicit none
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    integer(psb_ipk_), intent(out)              :: info 
+
+    integer(psb_ipk_) :: mh, nh, md, nd
+
+    info = psb_success_
+
+    if(allocated(x%v)) then 
+      mh = size(x%v, 1)
+      nh = size(x%v, 2)
+    else
+      mh = 0
+      nh = 0
+    end if
+
+    if(x%is_host()) then 
+      if(c_associated(x%deviceVect)) then 
+        md = getMultiVecDevicePitch(x%deviceVect)
+        nd = getMultiVecDeviceCount(x%deviceVect)
+        if((md < mh) .or. (nd < nh)) then 
+          call freeMultiVecDevice(x%deviceVect)
+          x%deviceVect = c_null_ptr
+        end if
+      end if
+
+      if(.not. c_associated(x%deviceVect)) then 
+        info = FallocMultiVecDevice(x%deviceVect, nh, mh, spgpu_type_double)
+        if(info == psb_success_) call psb_realloc(getMultiVecDevicePitch(x%deviceVect), &
+                          & getMultiVecDeviceCount(x%deviceVect), x%v, info, pad = dzero)
+        if(info /= psb_success_) then 
+          !!$ write(0, *) 'Error from FallocMultiVecDevice', info, n
+          if(info == spgpu_outofmem) info = psb_err_alloc_request_
+        end if
+      end if
+    else if(x%is_dev()) then 
+      md = getMultiVecDevicePitch(x%deviceVect)
+      nd = getMultiVecDeviceCount(x%deviceVect)
+      if((mh /= md) .or. (nh /= nd)) then 
+        call psb_realloc(getMultiVecDevicePitch(x%deviceVect), &
+                          & getMultiVecDeviceCount(x%deviceVect), x%v, info, pad = dzero)
+      end if
+    end if
+  end subroutine d_cuda_multi_sync_space
 
   function d_cuda_multi_is_dev(x) result(res)
     implicit none
@@ -1616,27 +1776,26 @@ contains
     res = (x%state == is_sync)
   end function d_cuda_multi_is_sync
 
-  function d_cuda_multi_get_nrows(x) result(res)
+  subroutine d_cuda_multi_set_host(x)
     implicit none
-    class(psb_d_multivect_cuda), intent(in) :: x
-    integer(psb_ipk_) :: res
+    class(psb_d_multivect_cuda), intent(inout) :: x
+    
+    x%state = is_host
+  end subroutine d_cuda_multi_set_host
 
-    res = x%m_nrows
-  end function d_cuda_multi_get_nrows
-  
-  function d_cuda_multi_get_ncols(x) result(res)
+  subroutine d_cuda_multi_set_dev(x)
     implicit none
-    class(psb_d_multivect_cuda), intent(in) :: x
-    integer(psb_ipk_) :: res
+    class(psb_d_multivect_cuda), intent(inout) :: x
+    
+    x%state = is_dev
+  end subroutine d_cuda_multi_set_dev
 
-    res = x%m_ncols
-  end function d_cuda_multi_get_ncols
-
-  function d_cuda_multi_get_fmt() result(res)
+  subroutine d_cuda_multi_set_sync(x)
     implicit none
-    character(len=5) :: res
-    res = 'dGPU'
-  end function d_cuda_multi_get_fmt
+    class(psb_d_multivect_cuda), intent(inout) :: x
+    
+    x%state = is_sync
+  end subroutine d_cuda_multi_set_sync
 
   !!$  function d_cuda_multi_dot_v(n, x, y) result(res)
   !!$    implicit none
@@ -2492,154 +2651,6 @@ contains
   !!$    if(x%is_dev()) call x%sync()
   !!$    res = sum(abs(x%v(1:n)))
   !!$  end function d_cuda_multi_asum
-  
-  subroutine d_cuda_multi_all(m, n, x, info)
-    use psi_serial_mod
-    use psb_realloc_mod
-    implicit none
-    integer(psb_ipk_), intent(in)             :: m, n
-    class(psb_d_multivect_cuda), intent(out)  :: x
-    integer(psb_ipk_), intent(out)            :: info
-    
-    call psb_realloc(m, n, x%v, info, pad = dzero)
-    x%m_nrows = m
-    x%m_ncols = n
-    if(info == psb_success_) call x%set_host()
-    if(info == psb_success_) call x%sync_space(info)
-    if(info /= psb_success_) then 
-      info = psb_err_alloc_request_
-      call psb_errpush(info, 'd_cuda_multi_all', i_err = (/m, n, n, n, n/))
-    end if
-  end subroutine d_cuda_multi_all
-
-  subroutine d_cuda_multi_zero(x)
-    use psi_serial_mod
-    implicit none
-    class(psb_d_multivect_cuda), intent(inout) :: x
-    
-    if(allocated(x%v)) x%v = dzero
-    call x%set_host()
-  end subroutine d_cuda_multi_zero
-
-  subroutine d_cuda_multi_asb(m, n, x, info, scratch)
-    use psi_serial_mod
-    use psb_realloc_mod
-    implicit none
-    integer(psb_ipk_), intent(in)               :: m, n
-    class(psb_d_multivect_cuda), intent(inout)  :: x
-    integer(psb_ipk_), intent(out)              :: info
-    logical, intent(in), optional               :: scratch
-
-    integer(psb_ipk_) :: nd, nc
-
-    info = psb_success_
-    x%m_nrows = m
-    x%m_ncols = n
-    if(x%is_host()) then 
-      call x%psb_d_base_multivect_type%asb(m, n, info, scratch)
-      if(info == psb_success_) call x%sync_space(info)
-    else if(x%is_dev()) then 
-      nd = getMultiVecDevicePitch(x%deviceVect)
-      nc = getMultiVecDeviceCount(x%deviceVect)
-      if((nd < m) .or. (nc < n)) then 
-        call x%sync()
-        call x%psb_d_base_multivect_type%asb(m, n, info)      
-        if(info == psb_success_) call x%sync_space(info)
-        call x%set_host()
-      end if
-    end if
-  end subroutine d_cuda_multi_asb
-
-  subroutine d_cuda_multi_sync_space(x, info)
-    use psb_realloc_mod
-    implicit none
-    class(psb_d_multivect_cuda), intent(inout)  :: x
-    integer(psb_ipk_), intent(out)              :: info 
-
-    integer(psb_ipk_) :: mh, nh, md, nd
-
-    info = psb_success_
-
-    if(allocated(x%v)) then 
-      mh = size(x%v, 1)
-      nh = size(x%v, 2)
-    else
-      mh = 0
-      nh = 0
-    end if
-
-    if(x%is_host()) then 
-      if(c_associated(x%deviceVect)) then 
-        md = getMultiVecDevicePitch(x%deviceVect)
-        nd = getMultiVecDeviceCount(x%deviceVect)
-        if((md < mh) .or. (nd < nh)) then 
-          call freeMultiVecDevice(x%deviceVect)
-          x%deviceVect = c_null_ptr
-        end if
-      end if
-
-      if(.not. c_associated(x%deviceVect)) then 
-        info = FallocMultiVecDevice(x%deviceVect, nh, mh, spgpu_type_double)
-        if(info == psb_success_) call psb_realloc(getMultiVecDevicePitch(x%deviceVect), &
-                          & getMultiVecDeviceCount(x%deviceVect), x%v, info, pad = dzero)
-        if(info /= psb_success_) then 
-          !!$ write(0, *) 'Error from FallocMultiVecDevice', info, n
-          if(info == spgpu_outofmem) info = psb_err_alloc_request_
-        end if
-      end if
-    else if(x%is_dev()) then 
-      md = getMultiVecDevicePitch(x%deviceVect)
-      nd = getMultiVecDeviceCount(x%deviceVect)
-      if((mh /= md) .or. (nh /= nd)) then 
-        call psb_realloc(getMultiVecDevicePitch(x%deviceVect), &
-                          & getMultiVecDeviceCount(x%deviceVect), x%v, info, pad = dzero)
-      end if
-    end if
-  end subroutine d_cuda_multi_sync_space
-
-  subroutine d_cuda_multi_sync(x)
-    implicit none
-    class(psb_d_multivect_cuda), intent(inout)  :: x
-
-    integer(psb_ipk_) :: n, info
-    info = psb_success_
-
-    if(x%is_host()) then 
-      if(.not. c_associated(x%deviceVect)) call x%sync_space(info)
-      if(info == psb_success_) info = writeMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))
-    else if(x%is_dev()) then 
-      info = readMultiVecDevice(x%deviceVect, x%v, size(x%v, 1))
-    end if
-
-    if(info == psb_success_) call x%set_sync()
-
-    if(info /= psb_success_) then
-      info = psb_err_internal_error_
-      call psb_errpush(info, 'd_cuda_multi_sync')
-    end if
-  end subroutine d_cuda_multi_sync
-
-  subroutine d_cuda_multi_free(x, info)
-    use psi_serial_mod
-    use psb_realloc_mod
-    implicit none
-    class(psb_d_multivect_cuda), intent(inout)  :: x
-    integer(psb_ipk_), intent(out)              :: info
-    
-    info = psb_success_
-    if(c_associated(x%deviceVect)) then 
-      call freeMultiVecDevice(x%deviceVect)
-      x%deviceVect = c_null_ptr
-    end if
-
-    if(allocated(x%buffer)) then 
-      !!$ call inner_unregister(x%buffer)
-      deallocate(x%buffer, stat = info)
-    end if
-
-    if(allocated(x%v)) deallocate(x%v, stat = info)
-    call x%set_sync()
-  end subroutine d_cuda_multi_free
 
   subroutine d_cuda_multi_vect_finalize(x)
     use psi_serial_mod
@@ -2663,19 +2674,4 @@ contains
     if(allocated(x%v)) deallocate(x%v, stat = info)
     call x%set_sync()
   end subroutine d_cuda_multi_vect_finalize
-
-  subroutine d_cuda_multi_ins(n, irl, val, dupl, x, maxr, info)
-    use psi_serial_mod
-    implicit none
-    integer(psb_ipk_), intent(in)               :: n, dupl, maxr
-    integer(psb_ipk_), intent(in)               :: irl(:)
-    real(psb_dpk_), intent(in)                  :: val(:, :)
-    class(psb_d_multivect_cuda), intent(inout)  :: x
-    integer(psb_ipk_), intent(out)              :: info
-
-    info = psb_success_
-    if(x%is_dev()) call x%sync()
-    call x%psb_d_base_multivect_type%ins(n, irl, val, dupl, maxr, info)
-    call x%set_host()
-  end subroutine d_cuda_multi_ins
 end module psb_d_cuda_multivect_mod
