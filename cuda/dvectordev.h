@@ -56,16 +56,17 @@ int iscatMultiVecDeviceDouble(void* deviceVec, int vectorId, int n, int first, v
 int iscatMultiVecDeviceDoubleVecIdx(void* deviceVec, int vectorId, int n, int first, void *deviceIdx, int hfirst, void* host_values, int indexBase, double beta);
 
 //AXPY-like operations
-int axpbyMultiVecDeviceDouble(int n, double alpha, void* devVecX, double beta, void* devVecY);
-int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY);
-int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY);
-int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY);
-int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devVecX, double beta, void* devVecY, void* devVecZ);
-int axpbyMultiVecDeviceDouble6(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ, int idxZ);
-int axpbyMultiVecDeviceDouble7(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);
-int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);
-int axpbyMultiVecDeviceDouble9(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ);
-int axpbyMultiVecDeviceDoubleO(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW);
+int axpbyMultiVecDeviceDouble1(int n, double alpha, void* devVecX, double beta, void* devVecY);                                                              //cudaVect, v_full, m_full
+int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY);                                                   //ext_col
+int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY);                                                   //v_idxs
+int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY);                                         //m_idxs
+int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devVecX, double beta, void* devVecY, void* devVecZ);                                              //m_full_out
+
+int axpbyczMultiVecDeviceDouble1(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ, int idxZ);                                              //axpbycz_vv
+int axpbyczMultiVecDeviceDouble2(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);                                    //axpbycz_mv
+int axpbyczMultiVecDeviceDouble3(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ);                          //axpbycz_mm_idxs
+int axpbyczMultiVecDeviceDouble4(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ);                                                        //axpbycz_mm_full
+int axpbyczMultiVecDeviceDouble5(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW); //axpbycz_mm_fullout
 
 int upd_xyzMultiVecDeviceDouble(int n, double alpha,double beta, double gamma, double delta, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ);
 int xyzwMultiVecDeviceDouble(int n, double a, double b, double c, double d, double e, double f, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ, void* devMultiVecW);

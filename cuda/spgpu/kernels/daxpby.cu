@@ -28,11 +28,11 @@ __global__ void spgpuDaxpby_krn(double* z, int n, double beta, double* y, double
 {
 	int id = threadIdx.x + BLOCK_SIZE * blockIdx.x;
 	unsigned int gridSize = blockDim.x * gridDim.x;
-	if (beta == 0.0)
+	if(beta == 0.0)
 		for(; id < n; id += gridSize)
 	    	z[id] = PREC_DMUL(alpha, x[id]);
 	else
-	  	for(; id < n; id +=gridSize)
+	  	for(; id < n; id += gridSize)
 			z[id] = PREC_DADD(PREC_DMUL(alpha, x[id]), PREC_DMUL(beta, y[id]));
 }
 
@@ -54,18 +54,50 @@ void spgpuDaxpby(spgpuHandle_t handle,
 
 	spgpuDaxpby_krn<<<grid, block, 0, handle->currentStream>>>(z, n, beta, y, alpha, x);
 }
+
+__global__ void spgpuDaxpbycz_krn(double* w, int n, double gamma, double* z, double beta, double* y, double alpha, double* x)
+{
+	int id = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+	unsigned int gridSize = blockDim.x * gridDim.x;
+	//TODO: alpha, beta, gamma == 0.0
+	for(; id < n; id += gridSize)
+		w[id] = PREC_DADD(PREC_DADD(PREC_DMUL(alpha, x[id]), PREC_DMUL(beta, y[id])), PREC_DMUL(gamma, z[id]));
+}
+
+void spgpuDaxpbycz(spgpuHandle_t handle,
+	__device double* w,
+	int n,
+	double gamma,
+	__device double* z,
+	double beta,
+	__device double* y,
+	double alpha,
+	__device double* x)
+{
+	int num_mp, max_threads_mp, num_blocks_mp, num_blocks;
+	dim3 block(BLOCK_SIZE);
+	num_mp         = getGPUMultiProcessors();
+	max_threads_mp = getGPUMaxThreadsPerMP();
+	num_blocks_mp  = max_threads_mp/BLOCK_SIZE;
+	num_blocks     = num_blocks_mp * num_mp;
+	dim3 grid(num_blocks);
+
+	spgpuDaxpbycz_krn<<<grid, block, 0, handle->currentStream>>>(w, n, gamma, z, beta, y, alpha, x);
+}
+
+
 #else
 
 __global__ void spgpuDaxpby_krn(double *z, int n, double beta, double *y, double alpha, double* x)
 {
 	int id = threadIdx.x + BLOCK_SIZE*blockIdx.x;
 	
-	if (id < n)
+	if(id < n)
 	{
 		// Since z, x and y are accessed with the same offset by the same thread,
 		// and the write to z follows the x and y read, x, y and z can share the same base address (in-place computing).
 
-		if (beta == 0.0)
+		if(beta == 0.0)
 			z[id] = PREC_DMUL(alpha,x[id]);
 		else
 			z[id] = PREC_DADD(PREC_DMUL(alpha, x[id]), PREC_DMUL(beta,y[id]));

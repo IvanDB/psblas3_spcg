@@ -160,30 +160,181 @@ int iscatMultiVecDeviceDoubleVecIdx(void* deviceVec, int vectorId, int n, int fi
 }
 
 //AXPY-like operations
-int axpbyMultiVecDeviceDouble(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY)
+int axpbyMultiVecDeviceDouble1(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY)
 {
   struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
   struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
   spgpuHandle_t handle = psb_cudaGetHandle();
-  int pitch = devVecY->pitch_;
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
   if((n > devVecY->size_) || (n > devVecX->size_ )) 
     return SPGPU_UNSUPPORTED;
 
-  for(int j = 0; j < devVecY->count_; j++)
-    spgpuDaxpby(handle, (double*) devVecY->v_ + (pitch * j), n, beta, (double*) devVecY->v_ + (pitch * j), alpha, (double*) devVecX->v_ + (pitch * j));
+  if(devVecX->count_ != devVecY->count_)        //case v_full
+    for(int j = 0; j < devVecY->count_; ++j)
+      spgpuDaxpby(handle, (double*) devVecY->v_ + (pitchY * j), n, beta, (double*) devVecY->v_ + (pitchY * j), alpha, (double*) devVecX->v_);
+  else                                          //case m_full or cudaVect
+    for(int j = 0; j < devVecY->count_; ++j)
+      spgpuDaxpby(handle, (double*) devVecY->v_ + (pitchY * j), n, beta, (double*) devVecY->v_ + (pitchY * j), alpha, (double*) devVecX->v_ + (pitchX * j));
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devMultiVecX, int idxX, double beta, void* devMultiVecY) 
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpby(handle, (double*) devVecY->v_, n, beta, (double*) devVecY->v_, alpha, (double*) devVecX->v_ + (pitchX * idxX));
 
   return SPGPU_SUCCESS;
 }
 
-int axpbyMultiVecDeviceDouble2(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY) {}
-int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY) {}
-int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY) {}
-int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devVecX, double beta, void* devVecY, void* devVecZ) {}
-int axpbyMultiVecDeviceDouble6(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ, int idxZ) {}
-int axpbyMultiVecDeviceDouble7(int n, double alpha, void* devVecX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ) {}
-int axpbyMultiVecDeviceDouble8(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ) {}
-int axpbyMultiVecDeviceDouble9(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ) {}
-int axpbyMultiVecDeviceDoubleO(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW) {}
+int axpbyMultiVecDeviceDouble3(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY, int idxY)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchY = devVecY->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpby(handle, (double*) devVecY->v_ + (pitchY * idxY), n, beta, (double*) devVecY->v_ + (pitchY * idxY), alpha, (double*) devVecX->v_);
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyMultiVecDeviceDouble4(int n, double alpha, void* devMultiVecX, int idxX, double beta, void* devMultiVecY, int idxY)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpby(handle, (double*) devVecY->v_ + (pitchY * idxY), n, beta, (double*) devVecY->v_ + (pitchY * idxY), alpha, (double*) devVecX->v_ + (pitchX * idxX));
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyMultiVecDeviceDouble5(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY, void* devMultiVecZ)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
+  int pitchZ = devVecZ->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  if((devVecX->count_ != devVecZ->count_) || (devVecX->count_ != devVecZ->count_))
+    return SPGPU_UNSUPPORTED;
+  
+  for(int j = 0; j < devVecZ->count_; ++j)
+    spgpuDaxpby(handle, (double*) devVecZ->v_ + (pitchZ * j), n, beta, (double*) devVecY->v_ + (pitchY * j), alpha, (double*) devVecX->v_ + (pitchX * j));
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyczMultiVecDeviceDouble1(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY, double gamma, void* devMultiVecZ, int idxZ)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchZ = devVecZ->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpbycz(handle, (double*) devVecZ->v_ + (pitchZ * idxZ), n, gamma, (double*) devVecZ->v_ + (pitchZ * idxZ), beta, (double*) devVecY->v_, alpha, (double*) devVecX->v_);
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyczMultiVecDeviceDouble2(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY, int idxY, double gamma, void* devMultiVecZ, int idxZ)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchY = devVecY->pitch_;
+  int pitchZ = devVecZ->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpbycz(handle, (double*) devVecZ->v_ + (pitchZ * idxZ), n, gamma, (double*) devVecZ->v_ + (pitchZ * idxZ), beta, (double*) devVecY->v_ + (pitchY * idxY), alpha, (double*) devVecX->v_);
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyczMultiVecDeviceDouble3(int n, double alpha, void* devMultiVecX, int idxX, double beta, void* devMultiVecY, int idxY, double gamma, void* devMultiVecZ, int idxZ)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
+  int pitchZ = devVecZ->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDaxpbycz(handle, (double*) devVecZ->v_ + (pitchZ * idxZ), n, gamma, (double*) devVecZ->v_ + (pitchZ * idxZ), beta, (double*) devVecY->v_ + (pitchY * idxY), alpha, (double*) devVecX->v_ + (pitchX * idxX));
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyczMultiVecDeviceDouble4(int n, double alpha, void* devMultiVecX, double beta, void* devMultiVecY, double gamma, void* devMultiVecZ)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
+  int pitchZ = devVecZ->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  if((devVecX->count_ != devVecZ->count_) || (devVecX->count_ != devVecZ->count_))
+    return SPGPU_UNSUPPORTED;
+
+  for(int j = 0; j < devVecZ->count_; ++j)
+    spgpuDaxpbycz(handle, (double*) devVecZ->v_ + (pitchZ * j), n, gamma, (double*) devVecZ->v_ + (pitchZ * j), beta, (double*) devVecY->v_ + (pitchY * j), alpha, (double*) devVecX->v_ + (pitchX * j));
+  
+  return SPGPU_SUCCESS;
+}
+
+int axpbyczMultiVecDeviceDouble5(int n, double alpha, void* devMultiVecX, int idxX, double beta, void* devMultiVecY, int idxY, double gamma, void* devMultiVecZ, int idxZ, void* devMultiVecW, int idxW)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  struct MultiVectDevice *devVecZ = (struct MultiVectDevice *) devMultiVecZ;
+  struct MultiVectDevice *devVecW = (struct MultiVectDevice *) devMultiVecW;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int pitchX = devVecX->pitch_;
+  int pitchY = devVecY->pitch_;
+  int pitchZ = devVecZ->pitch_;
+  int pitchW = devVecW->pitch_;
+  if((n > devVecY->size_) || (n > devVecX->size_ )) 
+    return SPGPU_UNSUPPORTED;
+  
+  if((devVecX->count_ != devVecW->count_) || (devVecX->count_ != devVecW->count_) || (devVecZ->count_ != devVecW->count_))
+    return SPGPU_UNSUPPORTED;
+
+  for(int j = 0; j < devVecZ->count_; ++j)
+    spgpuDaxpbycz(handle, (double*) devVecW->v_ + (pitchW * j), n, gamma, (double*) devVecZ->v_ + (pitchZ * j), beta, (double*) devVecY->v_ + (pitchY * j), alpha, (double*) devVecX->v_ + (pitchX * j));
+  
+  return SPGPU_SUCCESS;
+}
 
 int upd_xyzMultiVecDeviceDouble(int n, double alpha, double beta, double gamma, double delta, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ)
 {

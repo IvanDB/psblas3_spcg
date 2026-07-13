@@ -465,7 +465,30 @@ void spgpuDaxpby(spgpuHandle_t handle,
 	__device double *y,
 	double alpha,
 	__device double* x);
-	
+
+/** 
+ * \fn void spgpuDaxpbycz(spgpuHandle_t handle, __device double* w, int n, double gamma, __device double* z, double beta, __device double* y, double alpha, __device double* x);
+ * Computes the double precision w = gamma * z + beta * y + alpha * x. w could be exactly x, y or z (without offset) or another vector.
+ * \param handle the spgpu handle used to call this routine
+ * \param w the resulting vector
+ * \param n the vectors' length
+ * \param alpha the alpha value
+ * \param x the first input vector
+ * \param beta the beta value
+ * \param y the second input vector
+ * \param alpha the alpha value
+ * \param x the third input vector
+ */
+void spgpuDaxpbycz(spgpuHandle_t handle,
+	__device double* w,
+	int n,
+	double gamma,
+	__device double* z,
+	double beta,
+	__device double* y,
+	double alpha,
+	__device double* x);
+
 void spgpuDupd_xyz(spgpuHandle_t handle,
 	int n,
 	double alpha,
@@ -997,7 +1020,7 @@ void spgpuZmdot(spgpuHandle_t handle,
 	int count, 
 	int pitch);
 
-/** 
+/**
  * \fn void spgpuZabs (spgpuHandle_t handle, __device double* y, int n, double alpha, __device cuDoubleComplex* x)
  * Computes double precision complex (y = alpha * abs(x)) for each element in x.
  * \param handle The spgpu handle used to call this routine
@@ -1060,7 +1083,6 @@ void spgpuZaxpby(spgpuHandle_t handle,
 	__device cuDoubleComplex *y,
 	cuDoubleComplex alpha,
 	__device cuDoubleComplex* x);
-	
 
 void spgpuZupd_xyz(spgpuHandle_t handle,
 	int n,
