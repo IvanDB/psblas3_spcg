@@ -403,7 +403,7 @@ int asumMultiVecDeviceDouble(double* y_res, int n, void* devMultiVecA)
 }
 
 //DOT-like operations
-int dotMultiVecDeviceDouble(double* y_res, int n, void* devMultiVecA, void* devMultiVecB)
+int dotMultiVecDeviceDoubleS(double* y_res, int n, void* devMultiVecA, void* devMultiVecB)
 {
   struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
   struct MultiVectDevice *devVecB = (struct MultiVectDevice *) devMultiVecB;
@@ -411,6 +411,35 @@ int dotMultiVecDeviceDouble(double* y_res, int n, void* devMultiVecA, void* devM
 
   spgpuDmdot(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecB->pitch_);
   return SPGPU_SUCCESS;
+}
+
+int dotMultiVecDeviceDoubleV(double* y_res, int n, int mA, void* devMultiVecA, void* devMultiVecB)
+{
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+  struct MultiVectDevice *devVecB = (struct MultiVectDevice *) devMultiVecB;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+
+  spgpuDmvdot(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_);
+  return SPGPU_SUCCESS;
+}
+
+int dotMultiVecDeviceDoubleM(double* y_res, int n, int mA, int mB, void* devMultiVecA, void* devMultiVecB)
+{
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+  struct MultiVectDevice *devVecB = (struct MultiVectDevice *) devMultiVecB;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+
+  spgpuDmmdot(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_, devVecB->count_, devVecB->pitch_);
+  return SPGPU_SUCCESS;
+  
+  // int opMask = ((devVecA->count_ > 1) << 1) | (devVecB->count_ > 1);
+  // switch(opMask)
+  // {
+  //   case 0: /*vv*/ *y_res = spgpuDdot(handle, n, (double*) devVecA->v_, (double*) devVecB->v_);                                                                      break;
+  //   case 1: /*vm*/ spgpuDmvdot(handle, y_res, n, (double*) devVecB->v_, (double*) devVecA->v_, devVecB->count_, devVecB->pitch_);                                    break;
+  //   case 2: /*mv*/ spgpuDmvdot(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_);                                    break;
+  //   case 3: /*mm*/ spgpuDmmdot(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_, devVecB->count_, devVecB->pitch_);  break;
+  // }
 }
 
 //Elementwise operations

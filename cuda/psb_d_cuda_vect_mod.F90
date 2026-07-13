@@ -2443,15 +2443,52 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: y
     real(psb_dpk_), intent(out)                     :: res(:, :)
     integer(psb_ipk_), intent(out)                  :: info
+
+    res = dzero
+    
+    select type(y)        
+      type is (psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = dotMultiVecDevice(res, m, size(res, 1), size(res, 2), x%deviceVect, y%deviceVect)
+        if(info /= psb_success_) then 
+          info = psb_err_internal_error_
+          call psb_errpush(info, 'd_cuda_multi_dot_v')
+        end if
+  
+      class default
+        if(x%is_dev()) call x%sync()
+        if(y%is_dev()) call y%sync()
+        call x%psb_d_base_multivect_type%dotsbr(m, y, res, info)
+    end select
   end subroutine d_cuda_mvect_dot_mm
 
   subroutine d_cuda_mvect_dot_mv(m, x, y, res, info)
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)               :: m
     class(psb_d_multivect_cuda), intent(inout)  :: x
     class(psb_d_base_vect_type), intent(inout)  :: y
     real(psb_dpk_), intent(out)                 :: res(:)
     integer(psb_ipk_), intent(out)              :: info
+
+    res = dzero
+    
+    select type(y)        
+      type is (psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        info = dotMultiVecDevice(res, m, size(res, 1), x%deviceVect, y%deviceVect)
+        if(info /= psb_success_) then 
+          info = psb_err_internal_error_
+          call psb_errpush(info, 'd_cuda_multi_dot_v')
+        end if
+  
+      class default
+        if(x%is_dev()) call x%sync()
+        if(y%is_dev()) call y%sync()
+        call x%psb_d_base_multivect_type%dotsbr(m, y, res, info)
+    end select
   end subroutine d_cuda_mvect_dot_mv
 
   subroutine d_cuda_mvect_mlt_v_full(m, alpha, x, y, beta, info, conjgx, conjgy)

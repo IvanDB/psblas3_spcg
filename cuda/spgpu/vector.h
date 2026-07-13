@@ -384,21 +384,6 @@ void spgpuDscal(spgpuHandle_t handle,
 	__device double* b);
 
 /** 
- * \fn void spgpuDabs (spgpuHandle_t handle, __device double* y, int n, double alpha, __device double* x)
- * Computes double precision (y = alpha * abs(x)) for each element in x.
- * \param handle The spgpu handle used to call this routine
- * \param y the resulting vector (could be x)
- * \param n the vectors length
- * \param alpha the alpha value
- * \param x the input vector
- */
-void spgpuDabs(spgpuHandle_t handle, 
-	__device double* y, 
-	int n, 
-	double alpha,
-	__device double* x);
-	
-/** 
  * \fn float spgpuDmdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int count, int pitch)
  * Computes double precision dot product of a and b multivectors.
  * \param handle the spgpu handle used to call this routine
@@ -417,6 +402,63 @@ void spgpuDmdot(spgpuHandle_t handle,
 	int count, 
 	int pitch);
 
+/** 
+ * \fn float spgpuDmvdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA)
+ * Computes double precision dot product of multivector a and vector b.
+ * \param handle the spgpu handle used to call this routine
+ * \param y the result, made by dot products of every vector in multivector a with b
+ * \param n the vectors' length
+ * \param a the input multivector
+ * \param b the input vector
+ * \param countA the number of vectors in multivector a
+ * \param pitchA the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ */
+void spgpuDmvdot(spgpuHandle_t handle, 
+	double* y,
+	int n,
+	__device double* a,
+	__device double* b,
+	int countA,
+	int pitchA);
+
+/** 
+ * \fn float spgpuDmmdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
+ * Computes double precision dot product of multivector a and vector b.
+ * \param handle the spgpu handle used to call this routine
+ * \param y the result, made by dot products of every vector in multivector a with every vector in multivector b
+ * \param n the vectors' length
+ * \param a the first input multivector
+ * \param b the second input multivector
+ * \param countA the number of vectors in multivector a
+ * \param pitchA the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ * \param countB the number of vectors in multivector b
+ * \param pitchB the pitch, in number of elements, of multivector b (so the second element of the first vector in b will be b[pitch], the third b[2*pitch], etc.).
+ */
+void spgpuDmmdot(spgpuHandle_t handle, 
+	double* y,
+	int n,
+	__device double* a,
+	__device double* b,
+	int countA,
+	int pitchA,
+	int countB,
+	int pitchB);
+
+/** 
+ * \fn void spgpuDabs (spgpuHandle_t handle, __device double* y, int n, double alpha, __device double* x)
+ * Computes double precision (y = alpha * abs(x)) for each element in x.
+ * \param handle The spgpu handle used to call this routine
+ * \param y the resulting vector (could be x)
+ * \param n the vectors length
+ * \param alpha the alpha value
+ * \param x the input vector
+ */
+void spgpuDabs(spgpuHandle_t handle, 
+	__device double* y, 
+	int n, 
+	double alpha,
+	__device double* x);
+	
 /** 
  * \fn double spgpuDnrm2(spgpuHandle_t handle, int n, __device double* x)
  * Computes the double precision Euclidean vector norm of x. 

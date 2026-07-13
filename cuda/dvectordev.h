@@ -78,7 +78,9 @@ int amaxMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 int asumMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 
 //DOT-like operations
-int dotMultiVecDeviceDouble(double* y_res, int n, void* devVecA, void* devVecB);
+int dotMultiVecDeviceDoubleS(double* y_res, int n, void* devVecA, void* devVecB);
+int dotMultiVecDeviceDoubleV(double* y_res, int n, int mA, void* devVecA, void* devVecB);
+int dotMultiVecDeviceDoubleM(double* y_res, int n, int mA, int mB, void* devVecA, void* devVecB);
 
 //Elementwise operations
 int axyMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB);
