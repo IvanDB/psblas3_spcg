@@ -35,6 +35,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   integer(psb_ipk_), allocatable :: pW(:)   ! LAPACK IPIV: must be INTEGER
   integer(psb_ipk_)              :: linfo
   character(len=40)              :: lmsg
+  ! Optional Gram-matrix conditioning probe, enabled by SSTEP_DEBUG_GRAM.
+  logical                        :: gramdbg
+  integer(psb_ipk_)              :: gstat
+  character(len=8)               :: genv
+  real(psb_dpk_), allocatable    :: Wdbg(:, :), gevals(:), gwrk(:)
   real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
   type(psb_d_vect_type)       :: r  
   type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
@@ -123,6 +128,12 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   !Allocate and assembly data structure
   allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, s + 1), aux_fa(4*n_col), stat = info)
+  gramdbg = .false.
+  call get_environment_variable('SSTEP_DEBUG_GRAM', genv, status = gstat)
+  if(gstat == 0) then
+    gramdbg = .true.
+    allocate(Wdbg(s, s), gevals(s), gwrk(64*s), stat = info)
+  end if
   if(info == psb_success_) call psb_geall(r, desc_a, info)
   if(info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
@@ -199,6 +210,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_sum(desc_a%get_context(), temp_fa)
     W = temp_fa(:, 1 : s)
     alpha = temp_fa(:, s + 1)
+
+    if(gramdbg) then
+      Wdbg = W
+      call dsyev('N', 'U', s, Wdbg, s, gevals, gwrk, size(gwrk), linfo)
+      if((linfo == 0) .and. (me == psb_root_)) &
+        & write(psb_out_unit, '("GRAM ",a," it=",i0," lmin=",es10.3," lmax=",es10.3," cond=",es10.3)') &
+        & trim(methdfullname), itidx, gevals(1), gevals(s), gevals(s)/sign(max(abs(gevals(1)), tiny(done)), gevals(1))
+    end if
 
     ! Factor matrix W (if soving with LU or Cholesky factorization)
     linfo = 0
@@ -418,6 +437,11 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   integer(psb_ipk_), allocatable :: pW(:)   ! LAPACK IPIV: must be INTEGER
   integer(psb_ipk_)              :: linfo
   character(len=40)              :: lmsg
+  ! Optional Gram-matrix conditioning probe, enabled by SSTEP_DEBUG_GRAM.
+  logical                        :: gramdbg
+  integer(psb_ipk_)              :: gstat
+  character(len=8)               :: genv
+  real(psb_dpk_), allocatable    :: Wdbg(:, :), gevals(:), gwrk(:)
   real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :), B2(:, :), c0(:)
   type(psb_d_vect_type)       :: r  
   type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
@@ -506,6 +530,12 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   !Allocate and assembly data structure
   allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, 2*s + 1), B2(s, s), c0(s), aux_fa(4*n_col), stat = info)
+  gramdbg = .false.
+  call get_environment_variable('SSTEP_DEBUG_GRAM', genv, status = gstat)
+  if(gstat == 0) then
+    gramdbg = .true.
+    allocate(Wdbg(s, s), gevals(s), gwrk(64*s), stat = info)
+  end if
   if(info == psb_success_) call psb_geall(r, desc_a, info)
   if(info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
@@ -584,6 +614,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! Loop until convergence (or maxiter)
   do itidx = 1, itmax_
+    if(gramdbg) then
+      Wdbg = W
+      call dsyev('N', 'U', s, Wdbg, s, gevals, gwrk, size(gwrk), linfo)
+      if((linfo == 0) .and. (me == psb_root_)) &
+        & write(psb_out_unit, '("GRAM ",a," it=",i0," lmin=",es10.3," lmax=",es10.3," cond=",es10.3)') &
+        & trim(methdfullname), itidx, gevals(1), gevals(s), gevals(s)/sign(max(abs(gevals(1)), tiny(done)), gevals(1))
+    end if
+
     ! Factor matrix W (if soving with LU or Cholesky factorization)
     linfo = 0
     if(Gram_solver_ == lapackLU) call dgetrf(s, s, W, s, pW, linfo)
