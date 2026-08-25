@@ -32,7 +32,10 @@ subroutine psb_cscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=*), parameter :: methdbasename = 'sStepCG'
   character(len=20)           :: methdfullname
 
-  complex(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :)
+  integer(psb_ipk_), allocatable :: pW(:)   ! LAPACK IPIV: must be INTEGER
+  integer(psb_ipk_)              :: linfo
+  character(len=40)              :: lmsg
+  complex(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
   type(psb_c_vect_type)       :: r  
   type(psb_c_multivect_type)  :: Z, Q, P, V, temp_mv
   complex(psb_spk_)              :: cheb_coeff(3)
@@ -198,19 +201,32 @@ subroutine psb_cscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     alpha = temp_fa(:, s + 1)
 
     ! Factor matrix W (if soving with LU or Cholesky factorization)
-    if(Gram_solver_ == lapackLU) call cgetrf(s, s, W, s, pW, info)
-    if(Gram_solver_ == lapackCC) call cpotrf('L', s, W, s, info)
+    linfo = 0
+    if(Gram_solver_ == lapackLU) call cgetrf(s, s, W, s, pW, linfo)
+    if(Gram_solver_ == lapackCC) call cpotrf('L', s, W, s, linfo)
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram factorization fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Solve for alpha
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_1D(W, alpha, FGS_sweeps_)
-      case(lapackLU);   call cgetrs('N', s, 1, W, s, pW, alpha, s, info)
-      case(lapackCC);   call cpotrs('L', s, 1, W, s, alpha, s, info)
+      case(lapackLU);   call cgetrs('N', s, 1, W, s, pW, alpha, s, linfo)
+      case(lapackCC);   call cpotrs('L', s, 1, W, s, alpha, s, linfo)
       case default
         info = psb_err_invalid_input_ 
         call psb_errpush(info, name)
         goto 9999
     end select
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Update solution and residual
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
@@ -231,13 +247,19 @@ subroutine psb_cscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     ! Solve for beta
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_2D(W, beta, FGS_sweeps_)
-      case(lapackLU);   call cgetrs('N', s, s, W, s, pW, beta, s, info)
-      case(lapackCC);   call cpotrs('L', s, s, W, s, beta, s, info)
+      case(lapackLU);   call cgetrs('N', s, s, W, s, pW, beta, s, linfo)
+      case(lapackCC);   call cpotrs('L', s, s, W, s, beta, s, linfo)
       case default
         info = psb_err_invalid_input_ 
         call psb_errpush(info, name)
         goto 9999
     end select
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
     call psb_geaxpby(P, beta, temp_mv, desc_a, info, .false.)
@@ -393,7 +415,10 @@ subroutine psb_cscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=*), parameter :: methdbasename = 'sStepCGv2'
   character(len=20)           :: methdfullname
 
-  complex(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :), B2(:, :), c0(:)
+  integer(psb_ipk_), allocatable :: pW(:)   ! LAPACK IPIV: must be INTEGER
+  integer(psb_ipk_)              :: linfo
+  character(len=40)              :: lmsg
+  complex(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :), B2(:, :), c0(:)
   type(psb_c_vect_type)       :: r  
   type(psb_c_multivect_type)  :: Z, Q, P, V, temp_mv
   complex(psb_spk_)              :: cheb_coeff(3)
@@ -560,19 +585,32 @@ subroutine psb_cscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   ! Loop until convergence (or maxiter)
   do itidx = 1, itmax_
     ! Factor matrix W (if soving with LU or Cholesky factorization)
-    if(Gram_solver_ == lapackLU) call cgetrf(s, s, W, s, pW, info)
-    if(Gram_solver_ == lapackCC) call cpotrf('L', s, W, s, info)
+    linfo = 0
+    if(Gram_solver_ == lapackLU) call cgetrf(s, s, W, s, pW, linfo)
+    if(Gram_solver_ == lapackCC) call cpotrf('L', s, W, s, linfo)
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram factorization fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Solve for alpha
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_1D(W, alpha, FGS_sweeps_)
-      case(lapackLU);   call cgetrs('N', s, 1, W, s, pW, alpha, s, info)
-      case(lapackCC);   call cpotrs('L', s, 1, W, s, alpha, s, info)
+      case(lapackLU);   call cgetrs('N', s, 1, W, s, pW, alpha, s, linfo)
+      case(lapackCC);   call cpotrs('L', s, 1, W, s, alpha, s, linfo)
       case default
         info = psb_err_invalid_input_ 
         call psb_errpush(info, name)
         goto 9999
     end select
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Update solution and residual
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
@@ -599,13 +637,19 @@ subroutine psb_cscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
     beta = B2
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_2D(W, beta, FGS_sweeps_)
-      case(lapackLU);   call cgetrs('N', s, s, W, s, pW, beta, s, info)
-      case(lapackCC);   call cpotrs('L', s, s, W, s, beta, s, info)
+      case(lapackLU);   call cgetrs('N', s, s, W, s, pW, beta, s, linfo)
+      case(lapackCC);   call cpotrs('L', s, s, W, s, beta, s, linfo)
       case default
         info = psb_err_invalid_input_ 
         call psb_errpush(info, name)
         goto 9999
     end select
+    if(linfo /= 0) then
+      info = psb_err_from_subroutine_
+      write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
+      call psb_errpush(info, name, a_err = lmsg)
+      goto 9999
+    end if
 
     ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
     call psb_geaxpby(P, beta, temp_mv, desc_a, info, upd_flag = .false.)
