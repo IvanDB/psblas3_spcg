@@ -411,7 +411,7 @@ subroutine psb_zscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   integer(psb_ipk_)   :: err_act, np, me, debug_level, debug_unit, &
                           & n_col, n_row
   integer(psb_lpk_)   :: mglob
-  character(len=20)           :: name = 'psb_zscg'
+  character(len=20)           :: name = 'psb_zscg2'
   character(len=*), parameter :: methdbasename = 'sStepCGv2'
   character(len=20)           :: methdfullname
 
