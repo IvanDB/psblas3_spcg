@@ -37,7 +37,7 @@ subroutine psb_sscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=40)              :: lmsg
   real(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
   type(psb_s_vect_type)       :: r  
-  type(psb_s_multivect_type)  :: Z, Q, P, V, temp_mv
+  type(psb_s_multivect_type)  :: Z, Q, P, V
   real(psb_spk_)              :: cheb_coeff(3)
   integer(psb_ipk_)           :: itidx
   
@@ -128,14 +128,12 @@ subroutine psb_sscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(P, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(V, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
   if(info == psb_success_) call psb_geasb(r, desc_a, info)
   if(info == psb_success_) call psb_geasb(Z, desc_a, info)
   if(info == psb_success_) call psb_geasb(Q, desc_a, info)
   if(info == psb_success_) call psb_geasb(P, desc_a, info)
   if(info == psb_success_) call psb_geasb(V, desc_a, info)
-  if(info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
   if(info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
 
   if(info /= psb_success_) then 
@@ -261,11 +259,15 @@ subroutine psb_sscg_vect(a, prec, b, x, s, eps, desc_a, info, &
       goto 9999
     end if
 
-    ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
-    call psb_geaxpby(P, beta, temp_mv, desc_a, info, .false.)
-    call psb_geaxpby(sone, Z, sone, temp_mv, P, desc_a, info)
-    call psb_geaxpby(V, beta, temp_mv, desc_a, info, .false.)
-    call psb_geaxpby(sone, Q, sone, temp_mv, V, desc_a, info)
+    ! Update P and V without a temporary. upd_flag accumulates through the beta
+    ! of gemm, so Z = Z + P*beta computes the new direction block in place;
+    ! P and Z then exchange roles, which move_alloc does for free. Z and Q are
+    ! fully overwritten by the next matrix power kernel, so their old contents
+    ! do not matter.
+    call psb_geaxpby(P, beta, Z, desc_a, info, upd_flag = .true.)
+    call psb_geaxpby(V, beta, Q, desc_a, info, upd_flag = .true.)
+    call swap_mv(P, Z)
+    call swap_mv(V, Q)
   end do
 
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
@@ -277,7 +279,6 @@ subroutine psb_sscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   if(info == psb_success_) call psb_gefree(Q, desc_a, info)
   if(info == psb_success_) call psb_gefree(P, desc_a, info)
   if(info == psb_success_) call psb_gefree(V, desc_a, info)
-  if(info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
   if(info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
   if(info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, aux_fa, stat = info)
@@ -293,6 +294,16 @@ subroutine psb_sscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   return
 
 contains
+
+  subroutine swap_mv(x, y)
+    implicit none
+    type(psb_s_multivect_type), intent(inout) :: x, y
+    class(psb_s_base_multivect_type), allocatable :: t
+    call move_alloc(x%v, t)
+    call move_alloc(y%v, x%v)
+    call move_alloc(t, y%v)
+  end subroutine swap_mv
+
   function psb_s_chebyshev_coefficients(a, prec, desc, info, eigext) result(coeff)
     use psb_eigsolve_mod
     type(psb_sspmat_type), intent(in)     :: a
@@ -420,7 +431,7 @@ subroutine psb_sscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=40)              :: lmsg
   real(psb_spk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :), B2(:, :), c0(:)
   type(psb_s_vect_type)       :: r  
-  type(psb_s_multivect_type)  :: Z, Q, P, V, temp_mv
+  type(psb_s_multivect_type)  :: Z, Q, P, V
   real(psb_spk_)              :: cheb_coeff(3)
   integer(psb_ipk_)           :: itidx
   
@@ -511,14 +522,12 @@ subroutine psb_sscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(P, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(V, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
   if(info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
   if(info == psb_success_) call psb_geasb(r, desc_a, info)
   if(info == psb_success_) call psb_geasb(Z, desc_a, info)
   if(info == psb_success_) call psb_geasb(Q, desc_a, info)
   if(info == psb_success_) call psb_geasb(P, desc_a, info)
   if(info == psb_success_) call psb_geasb(V, desc_a, info)
-  if(info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
   if(info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
 
   if(info /= psb_success_) then 
@@ -651,11 +660,15 @@ subroutine psb_sscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
       goto 9999
     end if
 
-    ! Update P and V. Use of temp_mv in needed because internal dgemm constraint
-    call psb_geaxpby(P, beta, temp_mv, desc_a, info, upd_flag = .false.)
-    call psb_geaxpby(sone, Z, sone, temp_mv, P, desc_a, info)
-    call psb_geaxpby(V, beta, temp_mv, desc_a, info, upd_flag = .false.)
-    call psb_geaxpby(sone, Q, sone, temp_mv, V, desc_a, info)
+    ! Update P and V without a temporary. upd_flag accumulates through the beta
+    ! of gemm, so Z = Z + P*beta computes the new direction block in place;
+    ! P and Z then exchange roles, which move_alloc does for free. Z and Q are
+    ! fully overwritten by the next matrix power kernel, so their old contents
+    ! do not matter.
+    call psb_geaxpby(P, beta, Z, desc_a, info, upd_flag = .true.)
+    call psb_geaxpby(V, beta, Q, desc_a, info, upd_flag = .true.)
+    call swap_mv(P, Z)
+    call swap_mv(V, Q)
 
     !Compute new Gram matrix
     W = temp_fa(:, s+1 : 2*s)
@@ -674,7 +687,6 @@ subroutine psb_sscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   if(info == psb_success_) call psb_gefree(Q, desc_a, info)
   if(info == psb_success_) call psb_gefree(P, desc_a, info)
   if(info == psb_success_) call psb_gefree(V, desc_a, info)
-  if(info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
   if(info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
   if(info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, B2, c0, aux_fa, stat = info)
@@ -689,7 +701,17 @@ subroutine psb_sscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 9999 call psb_error_handler(err_act)
   return
 
-contains 
+contains
+
+  subroutine swap_mv(x, y)
+    implicit none
+    type(psb_s_multivect_type), intent(inout) :: x, y
+    class(psb_s_base_multivect_type), allocatable :: t
+    call move_alloc(x%v, t)
+    call move_alloc(y%v, x%v)
+    call move_alloc(t, y%v)
+  end subroutine swap_mv
+ 
   function psb_s_chebyshev_coefficients(a, prec, desc, info, eigext) result(coeff)
     use psb_eigsolve_mod
     type(psb_sspmat_type), intent(in)     :: a
