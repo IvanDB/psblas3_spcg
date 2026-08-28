@@ -40,6 +40,12 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   integer(psb_ipk_)              :: gstat
   character(len=8)               :: genv
   real(psb_dpk_), allocatable    :: Wdbg(:, :), gevals(:), gwrk(:)
+  ! Per-phase timers, enabled by SSTEP_TIMERS. psb_tic/psb_toc are two calls to
+  ! psb_wtime, so the cost is negligible next to a matrix power kernel.
+  logical, save                  :: do_timings = .false., timers_seen = .false.
+  real(psb_dpk_)                 :: tt, t_tot
+  real(psb_dpk_)                 :: t_mpk, t_gdot, t_gfac, t_gsol
+  real(psb_dpk_)                 :: t_xr, t_conv, t_bdot, t_blk
   real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
   type(psb_d_vect_type)       :: r  
   type(psb_d_multivect_type)  :: Z, Q, P, V
@@ -128,6 +134,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   !Allocate and assembly data structure
   allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, s + 1), aux_fa(4*n_col), stat = info)
+  if (.not. timers_seen) then
+    call get_environment_variable('SSTEP_TIMERS', genv, status = gstat)
+    do_timings  = (gstat == 0)
+    timers_seen = .true.
+  end if
+  t_mpk = dzero; t_gdot = dzero; t_gfac = dzero; t_gsol = dzero
+  t_xr  = dzero; t_conv = dzero; t_bdot = dzero; t_blk  = dzero
+
   gramdbg = .false.
   call get_environment_variable('SSTEP_DEBUG_GRAM', genv, status = gstat)
   if(gstat == 0) then
@@ -203,9 +217,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   ! Loop until convergence (or maxiter)
   do itidx = 1, itmax_
     ! Compute matrix W and rhs for alpha
+    if (do_timings) tt = psb_wtime()
     call psb_gedots(P, V, temp_fa(:, 1 : s), desc_a, info, global = .false.)
     call psb_gedots(P, r, temp_fa(:, s + 1), desc_a, info, global = .false.)
     call psb_sum(desc_a%get_context(), temp_fa)
+    if (do_timings) t_gdot = t_gdot + (psb_wtime() - tt)
     W = temp_fa(:, 1 : s)
     alpha = temp_fa(:, s + 1)
 
@@ -218,9 +234,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     end if
 
     ! Factor matrix W (if soving with LU or Cholesky factorization)
+    if (do_timings) tt = psb_wtime()
     linfo = 0
     if(Gram_solver_ == lapackLU) call dgetrf(s, s, W, s, pW, linfo)
     if(Gram_solver_ == lapackCC) call dpotrf('L', s, W, s, linfo)
+    if (do_timings) t_gfac = t_gfac + (psb_wtime() - tt)
     if(linfo /= 0) then
       info = psb_err_from_subroutine_
       write(lmsg, '("Gram factorization fail it=",i0," info=",i0)') itidx, linfo
@@ -229,6 +247,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     end if
 
     ! Solve for alpha
+    if (do_timings) tt = psb_wtime()
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_1D(W, alpha, FGS_sweeps_)
       case(lapackLU);   call dgetrs('N', s, 1, W, s, pW, alpha, s, linfo)
@@ -238,6 +257,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
+    if (do_timings) t_gsol = t_gsol + (psb_wtime() - tt)
     if(linfo /= 0) then
       info = psb_err_from_subroutine_
       write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
@@ -246,22 +266,31 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     end if
 
     ! Update solution and residual
+    if (do_timings) tt = psb_wtime()
     call psb_geaxpby(P, alpha, x, desc_a, info, upd_flag = .true.)
     call psb_geaxpby(V, -alpha, r, desc_a, info, upd_flag = .true.)
+    if (do_timings) t_xr = t_xr + (psb_wtime() - tt)
 
     ! Check convergence. 
+    if (do_timings) tt = psb_wtime()
     if(psb_check_conv(methdfullname, itidx, x, r, desc_a, stopdat, info)) exit
+    if (do_timings) t_conv = t_conv + (psb_wtime() - tt)
     
     ! Matrix power kernel
+    if (do_timings) tt = psb_wtime()
     call psb_pMPK(a, prec, r, Z, Q, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
                   & mvec_temp = aux_mv, farr_temp = aux_fa)
+    if (do_timings) t_mpk = t_mpk + (psb_wtime() - tt)
 
     ! Compute rhs for beta
+    if (do_timings) tt = psb_wtime()
     call psb_gedots(P, Q, beta, desc_a, info, .true.)
     beta = -beta;
+    if (do_timings) t_bdot = t_bdot + (psb_wtime() - tt)
 
     ! Solve for beta
+    if (do_timings) tt = psb_wtime()
     select case(Gram_solver_)
       case(forwardGS);  call inner_solver_fgs_2D(W, beta, FGS_sweeps_)
       case(lapackLU);   call dgetrs('N', s, s, W, s, pW, beta, s, linfo)
@@ -271,6 +300,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
         call psb_errpush(info, name)
         goto 9999
     end select
+    if (do_timings) t_gsol = t_gsol + (psb_wtime() - tt)
     if(linfo /= 0) then
       info = psb_err_from_subroutine_
       write(lmsg, '("Gram solve fail it=",i0," info=",i0)') itidx, linfo
@@ -283,15 +313,40 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     ! P and Z then exchange roles, which move_alloc does for free. Z and Q are
     ! fully overwritten by the next matrix power kernel, so their old contents
     ! do not matter.
+    if (do_timings) tt = psb_wtime()
     call psb_geaxpby(P, beta, Z, desc_a, info, upd_flag = .true.)
     call psb_geaxpby(V, beta, Q, desc_a, info, upd_flag = .true.)
     call swap_mv(P, Z)
     call swap_mv(V, Q)
+    if (do_timings) t_blk = t_blk + (psb_wtime() - tt)
   end do
 
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
   if(present(err)) err = derr
   if(present(iter)) iter = iter * s
+
+  if (do_timings) then
+    ! Max across ranks: the critical path, not whichever rank printed.
+    call psb_amx(ctxt, t_mpk);  call psb_amx(ctxt, t_gdot)
+    call psb_amx(ctxt, t_gfac); call psb_amx(ctxt, t_gsol)
+    call psb_amx(ctxt, t_xr);   call psb_amx(ctxt, t_conv)
+    call psb_amx(ctxt, t_bdot); call psb_amx(ctxt, t_blk)
+    t_tot = t_mpk + t_gdot + t_gfac + t_gsol + t_xr + t_conv + t_bdot + t_blk
+    if (me == psb_root_) then
+      write(psb_out_unit, '(" ")')
+      write(psb_out_unit, '("=== ",a," phase breakdown, ",i0," outer iterations")') &
+        & trim(methdfullname), itidx
+      call one_line('matrix power kernel (s matvec + halo)', t_mpk,  t_tot)
+      call one_line('Gram dots + allreduce',                 t_gdot, t_tot)
+      call one_line('beta dots + allreduce',                 t_bdot, t_tot)
+      call one_line('convergence check (allreduce)',         t_conv, t_tot)
+      call one_line('block update P,V (gemm)',               t_blk,  t_tot)
+      call one_line('x and r update (gemv)',                 t_xr,   t_tot)
+      call one_line('Gram factorization',                    t_gfac, t_tot)
+      call one_line('Gram solves',                           t_gsol, t_tot)
+      write(psb_out_unit, '("    ",a40," ",es12.5)') 'total accounted', t_tot
+    end if
+  end if
 
   if(info == psb_success_) call psb_gefree(r, desc_a, info)
   if(info == psb_success_) call psb_gefree(Z, desc_a, info)
@@ -313,6 +368,15 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   return
 
 contains
+
+  subroutine one_line(lbl, t, tot)
+    implicit none
+    character(len=*), intent(in) :: lbl
+    real(psb_dpk_), intent(in)   :: t, tot
+    write(psb_out_unit, '("    ",a40," ",es12.5,"  ",f5.1,"%")') &
+      & lbl, t, merge(100*t/tot, dzero, tot > dzero)
+  end subroutine one_line
+
 
   subroutine swap_mv(x, y)
     implicit none
