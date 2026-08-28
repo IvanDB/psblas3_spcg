@@ -46,6 +46,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   real(psb_dpk_)                 :: tt, t_tot
   real(psb_dpk_)                 :: t_mpk, t_gdot, t_gfac, t_gsol
   real(psb_dpk_)                 :: t_xr, t_conv, t_bdot, t_blk
+  ! With SSTEP_SYNC a timed barrier is placed before each collective. The
+  ! barrier absorbs the load imbalance that would otherwise be charged to the
+  ! collective, so the two are told apart instead of being one number.
+  logical, save                  :: do_sync = .false.
+  real(psb_dpk_)                 :: ts, t_wait
   real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
   type(psb_d_vect_type)       :: r  
   type(psb_d_multivect_type)  :: Z, Q, P, V
@@ -137,10 +142,13 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   if (.not. timers_seen) then
     call get_environment_variable('SSTEP_TIMERS', genv, status = gstat)
     do_timings  = (gstat == 0)
+    call get_environment_variable('SSTEP_SYNC', genv, status = gstat)
+    do_sync     = (gstat == 0)
     timers_seen = .true.
   end if
   t_mpk = dzero; t_gdot = dzero; t_gfac = dzero; t_gsol = dzero
   t_xr  = dzero; t_conv = dzero; t_bdot = dzero; t_blk  = dzero
+  t_wait = dzero
 
   gramdbg = .false.
   call get_environment_variable('SSTEP_DEBUG_GRAM', genv, status = gstat)
@@ -217,6 +225,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   ! Loop until convergence (or maxiter)
   do itidx = 1, itmax_
     ! Compute matrix W and rhs for alpha
+    if (do_sync) then
+      ts = psb_wtime()
+      call psb_barrier(ctxt)
+      t_wait = t_wait + (psb_wtime() - ts)
+    end if
     if (do_timings) tt = psb_wtime()
     call psb_gedots(P, V, temp_fa(:, 1 : s), desc_a, info, global = .false.)
     call psb_gedots(P, r, temp_fa(:, s + 1), desc_a, info, global = .false.)
@@ -272,6 +285,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     if (do_timings) t_xr = t_xr + (psb_wtime() - tt)
 
     ! Check convergence. 
+    if (do_sync) then
+      ts = psb_wtime()
+      call psb_barrier(ctxt)
+      t_wait = t_wait + (psb_wtime() - ts)
+    end if
     if (do_timings) tt = psb_wtime()
     if(psb_check_conv(methdfullname, itidx, x, r, desc_a, stopdat, info)) exit
     if (do_timings) t_conv = t_conv + (psb_wtime() - tt)
@@ -284,6 +302,11 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     if (do_timings) t_mpk = t_mpk + (psb_wtime() - tt)
 
     ! Compute rhs for beta
+    if (do_sync) then
+      ts = psb_wtime()
+      call psb_barrier(ctxt)
+      t_wait = t_wait + (psb_wtime() - ts)
+    end if
     if (do_timings) tt = psb_wtime()
     call psb_gedots(P, Q, beta, desc_a, info, .true.)
     beta = -beta;
@@ -331,7 +354,9 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
     call psb_amx(ctxt, t_gfac); call psb_amx(ctxt, t_gsol)
     call psb_amx(ctxt, t_xr);   call psb_amx(ctxt, t_conv)
     call psb_amx(ctxt, t_bdot); call psb_amx(ctxt, t_blk)
+    if (do_sync) call psb_amx(ctxt, t_wait)
     t_tot = t_mpk + t_gdot + t_gfac + t_gsol + t_xr + t_conv + t_bdot + t_blk
+    if (do_sync) t_tot = t_tot + t_wait
     if (me == psb_root_) then
       write(psb_out_unit, '(" ")')
       write(psb_out_unit, '("=== ",a," phase breakdown, ",i0," outer iterations")') &
@@ -344,6 +369,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
       call one_line('x and r update (gemv)',                 t_xr,   t_tot)
       call one_line('Gram factorization',                    t_gfac, t_tot)
       call one_line('Gram solves',                           t_gsol, t_tot)
+      if (do_sync) call one_line('imbalance absorbed at barriers',  t_wait, t_tot)
       write(psb_out_unit, '("    ",a40," ",es12.5)') 'total accounted', t_tot
     end if
   end if
