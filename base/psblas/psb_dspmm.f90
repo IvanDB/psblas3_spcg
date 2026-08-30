@@ -80,7 +80,13 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
   integer(psb_ipk_)       :: debug_level, debug_unit
   real(psb_dpk_), allocatable   :: xvsave(:)
   integer(psb_ipk_), parameter  :: nb = 4
-  logical, parameter            :: do_timings = .false.
+  ! Halo/compute split of the product, switched on at run time by
+  ! PSB_SPMM_TIMERS. PSB_SPMM_BARRIER additionally puts a barrier in
+  ! front of each phase, so that load imbalance is charged to the
+  ! barrier instead of to the exchange that follows it.
+  logical, save            :: do_timings = .false., do_barrier = .false.
+  logical, save            :: tmr_checked = .false.
+  character(len=16)        :: tmr_env
   integer(psb_ipk_), save :: mv_phase1 = -1, mv_phase2 = -1, mv_phase3 = -1, mv_phase4 = -1
   integer(psb_ipk_), save :: mv_phase11 = -1, mv_phase12 = -1
 
@@ -120,6 +126,13 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
     goto 9999
   end if
 
+  if (.not.tmr_checked) then
+    tmr_checked = .true.
+    call get_environment_variable('PSB_SPMM_TIMERS', tmr_env)
+    do_timings = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
+    call get_environment_variable('PSB_SPMM_BARRIER', tmr_env)
+    do_barrier = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
+  end if
   if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
   if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
   if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
@@ -177,10 +190,10 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
     
     if(allocated(a%ad)) then
       block
-        logical, parameter :: do_timings = .false.
+        ! do_timings/do_barrier are inherited from the routine scope
         real(psb_dpk_) :: t1, t2, t3, t4, t5
         !if(me == 0) write(0,*) 'going for overlap ',a%ad%get_fmt(),' ',a%and%get_fmt()
-        if(do_timings) call psb_barrier(ctxt)
+        if(do_timings .and. do_barrier) call psb_barrier(ctxt)
         if(do_timings) call psb_tic(mv_phase1)
         if(doswap_) call psi_swapdata(psb_swap_send_, dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
         if(do_timings) call psb_toc(mv_phase1)
@@ -188,6 +201,7 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
 
         call a%ad%spmm(alpha, x%v, beta, y%v, info)
 
+        if(do_timings) call psb_toc(mv_phase2)
         if(do_timings) call psb_tic(mv_phase3)
         if(doswap_) call psi_swapdata(psb_swap_recv_, dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
         if(do_timings) call psb_toc(mv_phase3)
@@ -198,9 +212,9 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
       end block
     else
       block
-        logical, parameter :: do_timings = .false.
+        ! do_timings/do_barrier are inherited from the routine scope
         real(psb_dpk_) :: t1, t2, t3, t4, t5
-        if(do_timings) call psb_barrier(ctxt)
+        if(do_timings .and. do_barrier) call psb_barrier(ctxt)
         if(do_timings) call psb_tic(mv_phase11)          
         if(doswap_) call psi_swapdata(ior(psb_swap_send_, psb_swap_recv_), dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
         if(do_timings) call psb_toc(mv_phase11)
@@ -1346,7 +1360,13 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
   character(len=20)        :: name, ch_err
   logical                  :: aliw, doswap_
   integer(psb_ipk_)        :: debug_level, debug_unit
-  logical, parameter       :: do_timings = .false.
+  ! Halo/compute split of the product, switched on at run time by
+  ! PSB_SPMM_TIMERS. PSB_SPMM_BARRIER additionally puts a barrier in
+  ! front of each phase, so that load imbalance is charged to the
+  ! barrier instead of to the exchange that follows it.
+  logical, save            :: do_timings = .false., do_barrier = .false.
+  logical, save            :: tmr_checked = .false.
+  character(len=16)        :: tmr_env
   integer(psb_ipk_), save  :: mv_phase1 = -1, mv_phase2 = -1, mv_phase3 = -1, mv_phase4 = -1
   integer(psb_ipk_), save  :: mv_phase11 = -1, mv_phase12 = -1
 
@@ -1387,6 +1407,13 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
   end if
 
   ! Timings
+  if (.not.tmr_checked) then
+    tmr_checked = .true.
+    call get_environment_variable('PSB_SPMM_TIMERS', tmr_env)
+    do_timings = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
+    call get_environment_variable('PSB_SPMM_BARRIER', tmr_env)
+    do_barrier = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
+  end if
   if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
   if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
   if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
@@ -1435,10 +1462,10 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
     
     if(allocated(a%ad)) then
       block
-        logical, parameter :: do_timings = .false.
+        ! do_timings/do_barrier are inherited from the routine scope
         real(psb_dpk_) :: t1, t2, t3, t4, t5
         !if(me == 0) write(0,*) 'going for overlap ',a%ad%get_fmt(),' ',a%and%get_fmt()
-        if(do_timings) call psb_barrier(ctxt)
+        if(do_timings .and. do_barrier) call psb_barrier(ctxt)
         if(do_timings) call psb_tic(mv_phase1)
         if(doswap_) call psi_swapdata(psb_swap_send_, dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
         if(do_timings) call psb_toc(mv_phase1)
@@ -1446,6 +1473,7 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
 
         call a%ad%spmm(alpha, x%v, idx_x, beta, y%v, idx_y, info)
 
+        if(do_timings) call psb_toc(mv_phase2)
         if(do_timings) call psb_tic(mv_phase3)
         if(doswap_) call psi_swapdata(psb_swap_recv_, dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
         if(do_timings) call psb_toc(mv_phase3)
@@ -1456,9 +1484,9 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
       end block
     else
       block
-        logical, parameter :: do_timings = .false.
+        ! do_timings/do_barrier are inherited from the routine scope
         real(psb_dpk_) :: t1, t2, t3, t4, t5
-        if(do_timings) call psb_barrier(ctxt)
+        if(do_timings .and. do_barrier) call psb_barrier(ctxt)
         
         if(do_timings) call psb_tic(mv_phase11)          
         if(doswap_) call psi_swapdata(ior(psb_swap_send_, psb_swap_recv_), dzero, x%v, desc_a, iwork, info, data = psb_comm_halo_)
