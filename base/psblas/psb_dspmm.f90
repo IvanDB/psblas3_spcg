@@ -133,12 +133,12 @@ subroutine psb_dspmv_vect(alpha, a, x, beta, y, desc_a, info, &
     call get_environment_variable('PSB_SPMM_BARRIER', tmr_env)
     do_barrier = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
   end if
-  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
-  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
-  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
-  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM: and cmp and")
-  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: noand exch ")
-  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: noand cmp")
+  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM overlap: halo send")
+  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM overlap: compute diag block")
+  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM overlap: halo recv")
+  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM overlap: compute offdiag")
+  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: halo exchange")
+  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: local computation")
 
   m    = desc_a%get_global_rows()
   n    = desc_a%get_global_cols()
@@ -956,12 +956,12 @@ subroutine psb_dspmv_mv(alpha, a, x, beta, y, idx_y, desc_a, info, trans, work, 
   end if
 
   ! Timings
-  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
-  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
-  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
-  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM: and cmp and")
-  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: noand exch ")
-  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: noand cmp")
+  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM overlap: halo send")
+  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM overlap: compute diag block")
+  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM overlap: halo recv")
+  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM overlap: compute offdiag")
+  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: halo exchange")
+  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: local computation")
 
   m    = desc_a%get_global_rows()
   n    = desc_a%get_global_cols()
@@ -1178,12 +1178,12 @@ subroutine psb_dspmv_vm(alpha, a, x, idx_x, beta, y, desc_a, info, trans, work, 
   end if
 
   ! Timings
-  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
-  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
-  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
-  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM: and cmp and")
-  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: noand exch ")
-  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: noand cmp")
+  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM overlap: halo send")
+  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM overlap: compute diag block")
+  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM overlap: halo recv")
+  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM overlap: compute offdiag")
+  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: halo exchange")
+  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: local computation")
 
   m    = desc_a%get_global_rows()
   n    = desc_a%get_global_cols()
@@ -1414,12 +1414,12 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
     call get_environment_variable('PSB_SPMM_BARRIER', tmr_env)
     do_barrier = (len_trim(tmr_env) > 0) .and. (tmr_env(1:1) /= '0')
   end if
-  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
-  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
-  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
-  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM: and cmp and")
-  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: noand exch ")
-  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: noand cmp")
+  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM overlap: halo send")
+  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM overlap: compute diag block")
+  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM overlap: halo recv")
+  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM overlap: compute offdiag")
+  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: halo exchange")
+  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: local computation")
 
   m    = desc_a%get_global_rows()
   n    = desc_a%get_global_cols()
@@ -1632,12 +1632,12 @@ subroutine psb_dspmv_mm_full(alpha, a, x, beta, y, desc_a, info, trans, work, do
   end if
 
   ! Timings
-  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM: and send ")
-  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM: and cmp ad")
-  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM: and rcv")
-  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM: and cmp and")
-  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: noand exch ")
-  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: noand cmp")
+  if((do_timings) .and. (mv_phase1 == -1))  mv_phase1 = psb_get_timer_idx("SPMM overlap: halo send")
+  if((do_timings) .and. (mv_phase2 == -1))  mv_phase2 = psb_get_timer_idx("SPMM overlap: compute diag block")
+  if((do_timings) .and. (mv_phase3 == -1))  mv_phase3 = psb_get_timer_idx("SPMM overlap: halo recv")
+  if((do_timings) .and. (mv_phase4 == -1))  mv_phase4 = psb_get_timer_idx("SPMM overlap: compute offdiag")
+  if((do_timings) .and. (mv_phase11 == -1)) mv_phase11 = psb_get_timer_idx("SPMM: halo exchange")
+  if((do_timings) .and. (mv_phase12 == -1)) mv_phase12 = psb_get_timer_idx("SPMM: local computation")
 
   m    = desc_a%get_global_rows()
   n    = desc_a%get_global_cols()
