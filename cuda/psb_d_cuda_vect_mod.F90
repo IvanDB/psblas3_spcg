@@ -1409,24 +1409,13 @@ module psb_d_cuda_multivect_mod
     !
     procedure, pass(x) :: nrm2_f  => d_cuda_mvect_nrm2_full
     procedure, pass(x) :: nrm2_i  => d_cuda_mvect_nrm2_idxs
-    ! procedure, pass(x) :: scal    => d_cuda_mvect_scal
-
-    ! !
-    ! ! OLD implementations
-    ! ! Remove after we check there are really not used
-    ! !
-    !!$ procedure, pass(x) :: dot_v    => d_cuda_multi_dot_v
-    !!$ procedure, pass(x) :: dot_a    => d_cuda_multi_dot_a
-    !!$ procedure, pass(y) :: axpby_v  => d_cuda_multi_axpby_v
-    !!$ procedure, pass(y) :: axpby_a  => d_cuda_multi_axpby_a
-    !!$ procedure, pass(y) :: mlt_v    => d_cuda_multi_mlt_v
-    !!$ procedure, pass(y) :: mlt_a    => d_cuda_multi_mlt_a
-    !!$ procedure, pass(z) :: mlt_a_2  => d_cuda_multi_mlt_a_2
-    !!$ procedure, pass(z) :: mlt_v_2  => d_cuda_multi_mlt_v_2
-    !!$ procedure, pass(x) :: scal     => d_cuda_multi_scal
-    !!$ procedure, pass(x) :: nrm2     => d_cuda_multi_nrm2
-    !!$ procedure, pass(x) :: amax     => d_cuda_multi_amax
-    !!$ procedure, pass(x) :: asum     => d_cuda_multi_asum
+    
+    ! OLD ones
+    procedure, pass(x) :: scal     => d_cuda_mvect_scal
+    procedure, pass(x) :: amax     => d_cuda_mvect_amax
+    procedure, pass(x) :: asum     => d_cuda_mvect_asum
+    procedure, pass(x) :: absval1  => d_cuda_mvect_absval1
+    procedure, pass(x) :: absval2  => d_cuda_mvect_absval2
 
     !!$ procedure, pass(x) :: gthzv_x  => d_cuda_multi_gthzv_x
     !!$ procedure, pass(y) :: sctb     => d_cuda_multi_sctb
@@ -2638,6 +2627,9 @@ contains
     integer(psb_ipk_), intent(in)               :: m
     class(psb_d_multivect_cuda), intent(inout)  :: x
     real(psb_dpk_), allocatable :: res(:)
+
+    if(x%is_dev()) call x%sync()
+    res = x%psb_d_base_multivect_type%nrm2(m)
   end function d_cuda_mvect_nrm2_full
   
   function d_cuda_mvect_nrm2_idxs(m, x, idx) result(res)
@@ -2646,48 +2638,61 @@ contains
     class(psb_d_multivect_cuda), intent(inout)  :: x
     integer(psb_ipk_), intent(in)               :: idx
     real(psb_dpk_)  :: res
+    
+    if(x%is_dev()) call x%sync()
+    res = x%psb_d_base_multivect_type%nrm2(m, idx)
   end function d_cuda_mvect_nrm2_idxs
 
-  !!$  subroutine d_cuda_multi_scal(alpha, x)
-  !!$    implicit none
-  !!$    class(psb_d_multivect_cuda), intent(inout) :: x
-  !!$    real(psb_dpk_), intent (in)          :: alpha
-  !!$    
-  !!$    if(x%is_dev()) call x%sync()
-  !!$    call x%psb_d_base_multivect_type%scal(alpha)
-  !!$    call x%set_host()
-  !!$  end subroutine d_cuda_multi_scal
-
-  !!$  function d_cuda_multi_nrm2(n, x) result(res)
-  !!$    implicit none
-  !!$    class(psb_d_multivect_cuda), intent(inout) :: x
-  !!$    integer(psb_ipk_), intent(in)        :: n
-  !!$    real(psb_dpk_)                       :: res
-  !!$    integer(psb_ipk_) :: info
-  !!$    ! WARNING: this should be changed. 
-  !!$    if(x%is_host()) call x%sync()
-  !!$    info = nrm2MultiVecDevice(res, n, x%deviceVect)   
-  !!$  end function d_cuda_multi_nrm2
+  subroutine d_cuda_mvect_scal(alpha, x)
+    implicit none
+    real(psb_dpk_), intent(in)                  :: alpha
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    
+    if(x%is_dev()) call x%sync()
+    call x%psb_d_base_multivect_type%scal(alpha)
+    call x%set_host()
+  end subroutine d_cuda_mvect_scal
   
-  !!$  function d_cuda_multi_amax(n, x) result(res)
-  !!$    implicit none
-  !!$    class(psb_d_multivect_cuda), intent(inout) :: x
-  !!$    integer(psb_ipk_), intent(in)        :: n
-  !!$    real(psb_dpk_)                :: res
-  !!$
-  !!$    if(x%is_dev()) call x%sync()
-  !!$    res = maxval(abs(x%v(1:n)))
-  !!$  end function d_cuda_multi_amax
+  function d_cuda_mvect_amax(n, x) result(res)
+    implicit none
+    integer(psb_ipk_), intent(in)               :: n
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    real(psb_dpk_), allocatable :: res(:)
+    
+    if(x%is_dev()) call x%sync()
+    res = x%psb_d_base_multivect_type%amax(n)
+  end function d_cuda_mvect_amax
 
-  !!$  function d_cuda_multi_asum(n, x) result(res)
-  !!$    implicit none
-  !!$    class(psb_d_multivect_cuda), intent(inout) :: x
-  !!$    integer(psb_ipk_), intent(in)        :: n
-  !!$    real(psb_dpk_)                :: res
-  !!$
-  !!$    if(x%is_dev()) call x%sync()
-  !!$    res = sum(abs(x%v(1:n)))
-  !!$  end function d_cuda_multi_asum
+  function d_cuda_mvect_asum(n, x) result(res)
+    implicit none
+    integer(psb_ipk_), intent(in)               :: n
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+    real(psb_dpk_), allocatable :: res(:)
+    
+    if(x%is_dev()) call x%sync()
+    res = x%psb_d_base_multivect_type%asum(n)
+  end function d_cuda_mvect_asum
+
+  subroutine d_cuda_mvect_absval1(x)
+    implicit none
+    class(psb_d_multivect_cuda), intent(inout)  :: x
+
+    if(x%is_dev()) call x%sync()
+    call x%psb_d_base_multivect_type%absval1()
+    call x%set_host()
+  end subroutine d_cuda_mvect_absval1
+
+  subroutine d_cuda_mvect_absval2(x, y)
+    implicit none
+    class(psb_d_multivect_cuda), intent(inout)      :: x
+    class(psb_d_base_multivect_type), intent(inout) :: y
+    
+    integer(psb_ipk_) :: info
+
+    if(x%is_dev()) call x%sync()
+    call x%psb_d_base_multivect_type%absval2(y)
+    call x%set_host()
+  end subroutine d_cuda_mvect_absval2
 
   subroutine d_cuda_multi_vect_finalize(x)
     use psi_serial_mod
