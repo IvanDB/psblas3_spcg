@@ -82,6 +82,10 @@ int dotMultiVecDeviceDoubleS(double* y_res, int n, void* devVecA, void* devVecB)
 int dotMultiVecDeviceDoubleV(double* y_res, int n, int mA, void* devVecA, void* devVecB);
 int dotMultiVecDeviceDoubleM(double* y_res, int n, int mA, int mB, void* devVecA, void* devVecB);
 
+//DOT-like operations with CFI
+int dotMultiVecDeviceDoubleV_CFI(CFI_cdesc_t* y_res, int n, void* devVecA, void* devVecB);
+int dotMultiVecDeviceDoubleM_CFI(CFI_cdesc_t* y_res, int n, void* devVecA, void* devVecB);
+
 //Elementwise operations
 int axyMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB);
 int axybzMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB, double beta, void *deviceVecZ);

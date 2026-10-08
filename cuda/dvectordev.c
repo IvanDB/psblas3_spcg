@@ -442,6 +442,27 @@ int dotMultiVecDeviceDoubleM(double* y_res, int n, int mA, int mB, void* devMult
   // }
 }
 
+//DOT-like operations with CFI
+int dotMultiVecDeviceDoubleV_CFI(CFI_cdesc_t* y_res, int n, void* devMultiVecA, void* devMultiVecB)
+{
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+  struct MultiVectDevice *devVecB = (struct MultiVectDevice *) devMultiVecB;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+
+  spgpuDmmdot_CFI(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_, devVecB->count_, devVecB->pitch_);
+  return SPGPU_SUCCESS;
+}
+
+int dotMultiVecDeviceDoubleM_CFI(CFI_cdesc_t* y_res, int n, void* devMultiVecA, void* devMultiVecB)
+{
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+  struct MultiVectDevice *devVecB = (struct MultiVectDevice *) devMultiVecB;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+
+  spgpuDmmdot_CFI(handle, y_res, n, (double*) devVecA->v_, (double*) devVecB->v_, devVecA->count_, devVecA->pitch_, devVecB->count_, devVecB->pitch_);
+  return SPGPU_SUCCESS;
+}
+
 //Elementwise operations
 int axyMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB)
 {

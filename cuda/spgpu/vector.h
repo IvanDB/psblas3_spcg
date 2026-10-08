@@ -421,6 +421,14 @@ void spgpuDmvdot(spgpuHandle_t handle,
 	int countA,
 	int pitchA);
 
+void spgpuDmvdot_CFI(spgpuHandle_t handle, 
+	CFI_cdesc_t* y,
+	int n,
+	__device double* a,
+	__device double* b,
+	int countA,
+	int pitchA);
+
 /** 
  * \fn float spgpuDmmdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
  * Computes double precision dot product of multivector a and vector b.
@@ -436,6 +444,16 @@ void spgpuDmvdot(spgpuHandle_t handle,
  */
 void spgpuDmmdot(spgpuHandle_t handle, 
 	double* y,
+	int n,
+	__device double* a,
+	__device double* b,
+	int countA,
+	int pitchA,
+	int countB,
+	int pitchB);
+
+void spgpuDmmdot_CFI(spgpuHandle_t handle, 
+	CFI_cdesc_t* y,
 	int n,
 	__device double* a,
 	__device double* b,

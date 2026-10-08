@@ -2434,15 +2434,14 @@ contains
     integer(psb_ipk_), intent(out)                  :: info
 
     res = dzero
-    
     select type(y)        
       type is (psb_d_multivect_cuda)
         if(x%is_host()) call x%sync()
         if(y%is_host()) call y%sync()
-        info = dotMultiVecDevice(res, m, size(res, 1), size(res, 2), x%deviceVect, y%deviceVect)
+        info = dotMultiVecDevice(res, m, x%deviceVect, y%deviceVect)
         if(info /= psb_success_) then 
           info = psb_err_internal_error_
-          call psb_errpush(info, 'd_cuda_multi_dot_v')
+          call psb_errpush(info, 'd_cuda_multi_dot_mm')
         end if
   
       class default
@@ -2462,15 +2461,14 @@ contains
     integer(psb_ipk_), intent(out)              :: info
 
     res = dzero
-    
     select type(y)        
       type is (psb_d_vect_cuda)
         if(x%is_host()) call x%sync()
         if(y%is_host()) call y%sync()
-        info = dotMultiVecDevice(res, m, size(res, 1), x%deviceVect, y%deviceVect)
+        info = dotMultiVecDevice(res, m, x%deviceVect, y%deviceVect)
         if(info /= psb_success_) then 
           info = psb_err_internal_error_
-          call psb_errpush(info, 'd_cuda_multi_dot_v')
+          call psb_errpush(info, 'd_cuda_multi_dot_mv')
         end if
   
       class default
@@ -2677,7 +2675,7 @@ contains
     implicit none
     class(psb_d_multivect_cuda), intent(inout)  :: x
 
-    if(x%is_dev()) call x%sync()
+    if(x%is_host()) call x%sync()
     call x%psb_d_base_multivect_type%absval1()
     call x%set_host()
   end subroutine d_cuda_mvect_absval1
@@ -2689,9 +2687,18 @@ contains
     
     integer(psb_ipk_) :: info
 
-    if(x%is_dev()) call x%sync()
-    call x%psb_d_base_multivect_type%absval2(y)
-    call x%set_host()
+    select type(y)
+      class is (psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+        call y%axpby(min(x%get_nrows(), y%get_nrows()), done, x, dzero, info)
+        call y%absval()
+
+      class default
+        if(x%is_dev()) call x%sync()
+        call x%psb_d_base_multivect_type%absval2(y)
+        call x%set_host()
+    end select
   end subroutine d_cuda_mvect_absval2
 
   subroutine d_cuda_multi_vect_finalize(x)

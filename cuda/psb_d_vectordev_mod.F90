@@ -275,6 +275,25 @@ module psb_d_vectordev_mod
       type(c_ptr), value    :: deviceVecA, deviceVecB
       integer(c_int)  :: val
     end function dotMultiVecDeviceDoubleM
+
+    ! with CFI
+    function dotMultiVecDeviceDoubleV_CFI(res, n, deviceVecA, deviceVecB) result(val) &
+            & bind(c, name = 'dotMultiVecDeviceDoubleV_CFI')
+      use iso_c_binding
+      real(c_double)        :: res(:)
+      integer(c_int), value :: n
+      type(c_ptr), value    :: deviceVecA, deviceVecB
+      integer(c_int)  :: val
+    end function dotMultiVecDeviceDoubleV_CFI
+
+    function dotMultiVecDeviceDoubleM_CFI(res, n, deviceVecA, deviceVecB) result(val) &
+            & bind(c, name = 'dotMultiVecDeviceDoubleM_CFI')
+      use iso_c_binding
+      real(c_double)        :: res(:, :)
+      integer(c_int), value :: n
+      type(c_ptr), value    :: deviceVecA, deviceVecB
+      integer(c_int)  :: val
+    end function dotMultiVecDeviceDoubleM_CFI
   end interface
   
   interface nrm2MultiVecDevice

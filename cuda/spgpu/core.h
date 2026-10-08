@@ -33,7 +33,12 @@
 #include "psb_types.h"
 #include "driver_types.h"
 #include "cuComplex.h"
- 
+
+#include "ISO_Fortran_binding.h"
+//typedef unsigned char byte;
+#define CFI_AT1(T, d, i) 	(*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm))
+#define CFI_AT2(T, d, i, j) (*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm + (size_t)(j) * (d)->dim[1].sm))
+
 /** \addtogroup coreFun Core Routines
  *  @{
  */
