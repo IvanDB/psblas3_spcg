@@ -375,7 +375,25 @@ int scalMultiVecDeviceDouble(double alpha, void* devMultiVecA)
   return SPGPU_SUCCESS;
 }
 
-int nrm2MultiVecDeviceDouble(double* y_res, int n, void* devMultiVecA)
+int nrm2MultiVecDeviceDoubleS(double* y_res, int n, void* devMultiVecA)
+{
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+
+  spgpuDmsnrm2(handle, y_res, n, (double*) devVecA->v_, devVecA->count_, devVecA->pitch_);
+  return SPGPU_SUCCESS;
+}
+
+int nrm2MultiVecDeviceDoubleI(double* y_res, int n, void* devMultiVecA, int idx)
+{
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
+
+  spgpuDmsnrm2(handle, y_res, n, ((double*) devVecA->v_) + (devVecA->pitch_ * idx));
+  return SPGPU_SUCCESS;
+}
+
+int nrm2MultiVecDeviceDoubleV(CFI_cdesc_t* y_res, int n, void* devMultiVecA)
 {
   spgpuHandle_t handle = psb_cudaGetHandle();
   struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;

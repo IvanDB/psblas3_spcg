@@ -73,7 +73,9 @@ int xyzwMultiVecDeviceDouble(int n, double a, double b, double c, double d, doub
 
 //Scaling and norms
 int scalMultiVecDeviceDouble(double alpha, void* devMultiVecA);
-int nrm2MultiVecDeviceDouble(double* y_res, int n, void* devVecA);
+int nrm2MultiVecDeviceDoubleS(double* y_res, int n, void* devVecA);
+int nrm2MultiVecDeviceDoubleI(double* y_res, int n, void* devVecA, int idx);
+int nrm2MultiVecDeviceDoubleV(CFI_cdesc_t* y_res, int n, void* devVecA);
 int amaxMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 int asumMultiVecDeviceDouble(double* y_res, int n, void* devVecA);
 

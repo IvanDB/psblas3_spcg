@@ -1161,7 +1161,7 @@ contains
     real(psb_dpk_)  :: res
 
     integer(psb_ipk_) :: info
-    ! WARNING: this should be changed. 
+    ! WARNING: this should be changed.
     if(x%is_host()) call x%sync()
     info = nrm2MultiVecDevice(res, n, x%deviceVect)
   end function d_cuda_nrm2
@@ -2626,8 +2626,10 @@ contains
     class(psb_d_multivect_cuda), intent(inout)  :: x
     real(psb_dpk_), allocatable :: res(:)
 
-    if(x%is_dev()) call x%sync()
-    res = x%psb_d_base_multivect_type%nrm2(m)
+    integer(psb_ipk_) :: info
+    ! WARNING: this should be changed.
+    if(x%is_host()) call x%sync()
+    info = nrm2MultiVecDevice(res, n, x%deviceVect)
   end function d_cuda_mvect_nrm2_full
   
   function d_cuda_mvect_nrm2_idxs(m, x, idx) result(res)
@@ -2637,8 +2639,10 @@ contains
     integer(psb_ipk_), intent(in)               :: idx
     real(psb_dpk_)  :: res
     
-    if(x%is_dev()) call x%sync()
-    res = x%psb_d_base_multivect_type%nrm2(m, idx)
+    integer(psb_ipk_) :: info
+    ! WARNING: this should be changed.
+    if(x%is_host()) call x%sync()
+    info = nrm2MultiVecDevice(res, n, x%deviceVect, idx)
   end function d_cuda_mvect_nrm2_idxs
 
   subroutine d_cuda_mvect_scal(alpha, x)

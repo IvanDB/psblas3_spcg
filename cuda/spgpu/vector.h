@@ -514,9 +514,25 @@ void spgpuDabs(spgpuHandle_t handle,
  * \param count the number of vectors in x
  * \param pitch the multivector's pitch
  */	
-	
-void spgpuDmnrm2(spgpuHandle_t handle, 
+void spgpuDmsnrm2(spgpuHandle_t handle, 
 	double *y, 
+	int n, 
+	__device double *x, 
+	int count, 
+	int pitch);
+
+/** 
+ * \fn void spgpuDmnrm2(spgpuHandle_t handle, double *y, int n, __device double *x, int count, int pitch)
+ * Computes the double precision Euclidean vector norm for every vector in the multivector x. 
+ * \param handle the spgpu handle used to call this routine
+ * \param y the array of results
+ * \param n the vectors' length in the x multivector
+ * \param x the input multivector
+ * \param count the number of vectors in x
+ * \param pitch the multivector's pitch
+ */	
+void spgpuDmvnrm2(spgpuHandle_t handle, 
+	CFI_cdesc_t *y, 
 	int n, 
 	__device double *x, 
 	int count, 
