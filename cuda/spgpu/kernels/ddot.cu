@@ -133,7 +133,7 @@ void spgpuDmsdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 		cublasDdot(handle->cublasHandle, n, a, 1, b, 1, y);
 		cudaDeviceSynchronize();
 	#else
-		y[0] = spgpuDdot(handle, n, a, b);
+		*y = spgpuDdot(handle, n, a, b);
 	#endif
 }
 
