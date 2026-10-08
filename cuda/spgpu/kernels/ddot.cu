@@ -170,7 +170,7 @@ void spgpuDmvdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device doubl
 void spgpuDmmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
 {
 	#ifdef USE_CUBLAS
-		double res[countA];
+		double res[countA*countB];
 		cublasDgemm(handle->cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, countA, countB, n, &c_done, a, pitchA, b, &c_done, &c_zero, res, countA);
 		cudaDeviceSynchronize();
 		for(int i = 0; i < countB; ++i)
@@ -187,12 +187,12 @@ void spgpuDmmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 void spgpuDmmdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
 {
 	#ifdef USE_CUBLAS
-		double res[countA][countB];
+		double res[countA*countB];
 		cublasDgemv(handle->cublasHandle, CUBLAS_OP_T, n, countA, &c_done, a, pitchA, b, &c_done, &c_dzero, res, 1);
 		cudaDeviceSynchronize();
 		for(int i = 0; i < countA; ++i)
 			for(int j = 0; j < countB; ++j)
-				CFI_AT2(double, y, i, j) = res[i][j];
+				CFI_AT2(double, y, i, j) = res[i*countA + j];
 	#else
 		//TO DO: optimize with custom gemm kernel?
 		for(int i = 0; i < countA; ++i)
