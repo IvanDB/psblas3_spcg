@@ -93,15 +93,7 @@ __global__ void spgpuDdot_kern(int n, double* x, double* y)
 
 double spgpuDdot(spgpuHandle_t handle, int n, __device double* a, __device double* b)
 {
-#ifdef USE_CUBLAS
-	double res;
-	cublasDdot(n, x, 1, y, 1, &res);
-	cudaDeviceSynchronize();
-	
-	return res;
-#else
 	double res = 0;
-
 	int device;
 	cudaGetDevice(&device);
 #if 0
@@ -123,7 +115,6 @@ double spgpuDdot(spgpuHandle_t handle, int n, __device double* a, __device doubl
 
 	cudaCheckError("CUDA error on ddot");
 	return res;
-#endif
 }
 
 void spgpuDmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int count, int pitch)
@@ -134,6 +125,16 @@ void spgpuDmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __de
 		a += pitch;
 		b += pitch;
 	}
+}
+
+void spgpuDmsdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b)
+{
+	#ifdef USE_CUBLAS
+		cublasDdot(handle->cublasHandle, n, a, 1, b, 1, y);
+		cudaDeviceSynchronize();
+	#else
+		y[0] = spgpuDdot(handle, n, a, b);
+	#endif
 }
 
 void spgpuDmvdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA)
@@ -183,7 +184,6 @@ void spgpuDmmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 	#endif
 }
 
-
 void spgpuDmmdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
 {
 	#ifdef USE_CUBLAS
@@ -194,7 +194,7 @@ void spgpuDmmdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device doubl
 			for(int j = 0; j < countB; ++j)
 				CFI_AT2(double, y, i, j) = res[i][j];
 	#else
-		//TO DO: optimize with custom gemv kernel?
+		//TO DO: optimize with custom gemm kernel?
 		for(int i = 0; i < countA; ++i)
 			for(int j = 0; j < countB; ++j)
 				CFI_AT2(double, y, i, j) = spgpuDdot(handle, n, a + (i * pitchA), b + (j * pitchB));

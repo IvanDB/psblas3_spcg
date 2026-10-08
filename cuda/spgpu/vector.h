@@ -403,8 +403,23 @@ void spgpuDmdot(spgpuHandle_t handle,
 	int pitch);
 
 /** 
+ * \fn float spgpuDmdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b)
+ * Computes double precision dot product of a and b vectors (count assumed = 1 for both).
+ * \param handle the spgpu handle used to call this routine
+ * \param y the result, made by dot products of a and b
+ * \param n the vectors' length
+ * \param a the first input vector
+ * \param b the second input vector
+ */
+void spgpuDmsdot(spgpuHandle_t handle, 
+	double* y, 
+	int n, 
+	__device double* a, 
+	__device double* b);
+
+/** 
  * \fn float spgpuDmvdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA)
- * Computes double precision dot product of multivector a and vector b.
+ * Computes double precision dot product of multivector a and vector b (count assumed = 1 for b).
  * \param handle the spgpu handle used to call this routine
  * \param y the result, made by dot products of every vector in multivector a with b
  * \param n the vectors' length
@@ -431,7 +446,7 @@ void spgpuDmvdot_CFI(spgpuHandle_t handle,
 
 /** 
  * \fn float spgpuDmmdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
- * Computes double precision dot product of multivector a and vector b.
+ * Computes double precision dot product of multivector a and multivector b.
  * \param handle the spgpu handle used to call this routine
  * \param y the result, made by dot products of every vector in multivector a with every vector in multivector b
  * \param n the vectors' length
