@@ -167,6 +167,37 @@ int baseIndex;
 } spgpuMatrixDesc_t
 */
 
+typedef struct 
+{
+	__device void *devBuffer; 
+	size_t devSize; 
+	void *pinBuffer; 
+	size_t pinSize;
+    cudaEvent_t pinInUse;
+} CFIBuffer;
+
+
+static void* CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuffer* buffer)
+{
+	size_t es = d->elem_len;
+    size_t m  = (size_t)d->dim[0].extent;
+    size_t n  = (d->rank == 2) ? (size_t)d->dim[1].extent : 1;
+    size_t bytes = m * n * es;
+
+	if(buffer->devSize < bytes)
+	{
+		cudaFree(buffer->devBuffer);
+		cudaMalloc(&(buffer->devBuffer), bytes);
+		buffer->devSize = bytes;
+	}
+
+	if(CFI_is_contiguous(cdesc))
+		cudaMemcpyAsync(buffer->devBuffer, cdesc->base_addr, bytes, cudaMemcpyHostToDevice, handle->currentStream);
+	else
+		printf("CFI buffer is not contiguous, this is WIP\n");
+}
+
+
 #define cuFloatComplex_isZero(a) 		(a.x == 0.0f && a.y == 0.0f)
 #define cuDoubleComplex_isZero(a) 		(a.x == 0.0  && a.y == 0.0)
 #define cuFloatComplex_isNotZero(a) 	(a.x != 0.0f || a.y != 0.0f)

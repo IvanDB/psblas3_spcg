@@ -336,6 +336,20 @@ int axpbyczMultiVecDeviceDouble5(int n, double alpha, void* devMultiVecX, int id
   return SPGPU_SUCCESS;
 }
 
+int colspanDeviceDouble(int n, void *devMultiVecX, CFI_cdesc_t *coeff, void *devMultiVecY, bool updFlag)
+{
+  struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;
+  struct MultiVectDevice *devVecY = (struct MultiVectDevice *) devMultiVecY;
+  spgpuHandle_t handle = psb_cudaGetHandle();
+
+  if((n > devVecY->size_) || (n > devVecX->size_)) 
+    return SPGPU_UNSUPPORTED;
+  
+  spgpuDcolspan(handle, n, (double*) devVecX->v_, coeff, (double*) devVecY->v_, updFlag);
+
+  return SPGPU_SUCCESS;
+}
+
 int upd_xyzMultiVecDeviceDouble(int n, double alpha, double beta, double gamma, double delta, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ)
 {
   struct MultiVectDevice *devVecX = (struct MultiVectDevice *) devMultiVecX;

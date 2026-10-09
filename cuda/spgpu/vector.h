@@ -604,6 +604,23 @@ void spgpuDaxpbycz(spgpuHandle_t handle,
 	double alpha,
 	__device double* x);
 
+/** 
+ * \fn void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, CFI_cdesc_t* coeff, __device double* y, bool updFlag
+ * Computes the double precision w = gamma * z + beta * y + alpha * x. w could be exactly x, y or z (without offset) or another vector.
+ * \param handle the spgpu handle used to call this routine
+ * \param n the vectors' length
+ * \param x the input multivector
+ * \param coeff the CFI descrictor of the fotran array of coefficients
+ * \param y the output (multi)vector
+ * \param updFlag boolen flag: if true, the result will be added to y, otherwise it will overwrite y
+ */
+void spgpuDcolspan(spgpuHandle_t handle,
+	int n,
+	__device double* x,
+	CFI_cdesc_t* coeff,
+	__device double* y,
+	bool updFlag);
+
 void spgpuDupd_xyz(spgpuHandle_t handle,
 	int n,
 	double alpha,

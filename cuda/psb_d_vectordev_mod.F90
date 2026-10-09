@@ -439,6 +439,26 @@ module psb_d_vectordev_mod
       type(c_ptr), value    :: deviceVecA, deviceVecB, deviceVecC, deviceVecD
       integer(c_int)  :: res
     end function axpbyczMultiVecDeviceDouble5
+
+    function colspan1DDeviceDouble(n, deviceVecA, coeff, deviceVecB, upd_flag) result(res) &
+            & bind(c, name = 'colspanDeviceDouble')
+      use iso_c_binding
+      integer(c_int), value   :: n
+      type(c_ptr), value      :: deviceVecA, deviceVecB
+      real(c_double)          :: coeff(:)
+      logical(c_bool), value  :: upd_flag 
+      integer(c_int)  :: res
+    end function colspan1DDeviceDouble
+    
+    function colspan2DDeviceDouble(n, deviceVecA, coeff, deviceVecB, upd_flag) result(res) &
+            & bind(c, name = 'colspanDeviceDouble')
+      use iso_c_binding
+      integer(c_int), value   :: n
+      type(c_ptr), value      :: deviceVecA, deviceVecB
+      real(c_double)          :: coeff(:, :)
+      logical(c_bool), value  :: upd_flag 
+      integer(c_int)  :: res
+    end function colspan2DDeviceDouble
   end interface
 
   interface upd_xyzMultiVecDevice

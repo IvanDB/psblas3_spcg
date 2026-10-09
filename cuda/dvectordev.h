@@ -68,6 +68,8 @@ int axpbyczMultiVecDeviceDouble3(int n, double alpha, void* devVecX, int idxX, d
 int axpbyczMultiVecDeviceDouble4(int n, double alpha, void* devVecX, double beta, void* devVecY, double gamma, void* devVecZ);                                                        //axpbycz_mm_full
 int axpbyczMultiVecDeviceDouble5(int n, double alpha, void* devVecX, int idxX, double beta, void* devVecY, int idxY, double gamma, void* devVecZ, int idxZ, void* devVecW, int idxW); //axpbycz_mm_fullout
 
+int colspanDeviceDouble(int n, void* devVecX, CFI_cdesc_t* y_res, void* devVecY, bool updFlag);
+
 int upd_xyzMultiVecDeviceDouble(int n, double alpha,double beta, double gamma, double delta, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ);
 int xyzwMultiVecDeviceDouble(int n, double a, double b, double c, double d, double e, double f, void* devMultiVecX, void* devMultiVecY, void* devMultiVecZ, void* devMultiVecW);
 

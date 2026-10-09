@@ -2400,16 +2400,27 @@ contains
     integer(psb_ipk_), intent(out)              :: info
     logical, intent(in)                         :: upd_flag
 
-    !TODO: export operation to GPU
+    select type(y)
+      type is(psb_d_vect_cuda)
+        !WIP: not optimized
+        if(x%is_host()) call x%sync()
+        if((upd_flag) .and. (y%is_host())) call y%sync()
+        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag)
+        if(info == psb_success_) call y%set_dev()
+      
+      class default
+        goto 9999
+    end select
+
+  9999 continue
     if(x%is_dev()) call x%sync()
-    if((upd_flag) .and. (y%is_dev())) call y%sync()
+    if(y%is_dev()) call y%sync()
     call x%psb_d_base_multivect_type%axpby(m, coeff, y, info, upd_flag)
-    call y%set_host()
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_colspan1D
 
   subroutine d_cuda_mvect_colspan2D(m, x, coeff, y, info, upd_flag)
     use psi_serial_mod
-    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     class(psb_d_multivect_cuda), intent(inout)      :: x
@@ -2418,11 +2429,23 @@ contains
     integer(psb_ipk_), intent(out)                  :: info
     logical, intent(in)                             :: upd_flag
 
-    !TODO: export operation to GPU
+    select type(y)
+      type is(psb_d_multivect_cuda)
+        !WIP: not optimized
+        if(x%is_host()) call x%sync()
+        if((upd_flag) .and. (y%is_host())) call y%sync()
+        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag)
+        if(info == psb_success_) call y%set_dev()
+      
+      class default
+        goto 9999
+    end select
+
+  9999 continue
     if(x%is_dev()) call x%sync()
-    if((upd_flag) .and. (y%is_dev())) call y%sync()
+    if(y%is_dev()) call y%sync()
     call x%psb_d_base_multivect_type%axpby(m, coeff, y, info, upd_flag)
-    call y%set_host()
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_colspan2D
 
   subroutine d_cuda_mvect_dot_mm(m, x, y, res, info)
@@ -2629,7 +2652,7 @@ contains
     integer(psb_ipk_) :: info
     ! WARNING: this should be changed.
     if(x%is_host()) call x%sync()
-    info = nrm2MultiVecDevice(res, n, x%deviceVect)
+    info = nrm2MultiVecDevice(res, m, x%deviceVect)
   end function d_cuda_mvect_nrm2_full
   
   function d_cuda_mvect_nrm2_idxs(m, x, idx) result(res)
@@ -2642,7 +2665,7 @@ contains
     integer(psb_ipk_) :: info
     ! WARNING: this should be changed.
     if(x%is_host()) call x%sync()
-    info = nrm2MultiVecDevice(res, n, x%deviceVect, idx)
+    info = nrm2MultiVecDevice(res, m, x%deviceVect, idx)
   end function d_cuda_mvect_nrm2_idxs
 
   subroutine d_cuda_mvect_scal(alpha, x)
