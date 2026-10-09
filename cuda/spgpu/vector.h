@@ -421,7 +421,7 @@ void spgpuDmsdot(spgpuHandle_t handle,
  * \fn float spgpuDmvdot (spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA)
  * Computes double precision dot product of multivector a and vector b (count assumed = 1 for b).
  * \param handle the spgpu handle used to call this routine
- * \param y the result, made by dot products of every vector in multivector a with b
+ * \param y the result, made by dot products of every vector in multivector a with the vector b
  * \param n the vectors' length
  * \param a the input multivector
  * \param b the input vector
@@ -436,6 +436,17 @@ void spgpuDmvdot(spgpuHandle_t handle,
 	int countA,
 	int pitchA);
 
+/** 
+ * \fn float spgpuDmmdot (spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
+ * Computes double precision dot product of multivector a and multivector b.
+ * \param handle the spgpu handle used to call this routine
+ * \param y the CFI_descrictor of the result fortran assumed-shape array, made by dot products of every vector in multivector a with the vector b
+ * \param n the vectors' length
+ * \param a the first input multivector
+ * \param b the second input multivector
+ * \param countA the number of vectors in multivector a
+ * \param pitchA the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ */
 void spgpuDmvdot_CFI(spgpuHandle_t handle, 
 	CFI_cdesc_t* y,
 	int n,
@@ -467,6 +478,19 @@ void spgpuDmmdot(spgpuHandle_t handle,
 	int countB,
 	int pitchB);
 
+/** 
+ * \fn float spgpuDmmdot (spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
+ * Computes double precision dot product of multivector a and multivector b.
+ * \param handle the spgpu handle used to call this routine
+ * \param y the CFI_descrictor of the result fortran assumed-shape array, made by dot products of every vector in multivector a with every vector in multivector b
+ * \param n the vectors' length
+ * \param a the first input multivector
+ * \param b the second input multivector
+ * \param countA the number of vectors in multivector a
+ * \param pitchA the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ * \param countB the number of vectors in multivector b
+ * \param pitchB the pitch, in number of elements, of multivector b (so the second element of the first vector in b will be b[pitch], the third b[2*pitch], etc.).
+ */
 void spgpuDmmdot_CFI(spgpuHandle_t handle, 
 	CFI_cdesc_t* y,
 	int n,
@@ -522,10 +546,10 @@ void spgpuDmsnrm2(spgpuHandle_t handle,
 	int pitch);
 
 /** 
- * \fn void spgpuDmnrm2(spgpuHandle_t handle, double *y, int n, __device double *x, int count, int pitch)
+ * \fn void spgpuDmnrm2(spgpuHandle_t handle, CFI_cdesc_t *y, int n, __device double *x, int count, int pitch)
  * Computes the double precision Euclidean vector norm for every vector in the multivector x. 
  * \param handle the spgpu handle used to call this routine
- * \param y the array of results
+ * \param y the CFI_descrictor of the result fortran assumed-shape array
  * \param n the vectors' length in the x multivector
  * \param x the input multivector
  * \param count the number of vectors in x
@@ -563,7 +587,7 @@ void spgpuDaxpby(spgpuHandle_t handle,
  * \param handle the spgpu handle used to call this routine
  * \param w the resulting vector
  * \param n the vectors' length
- * \param alpha the alpha value
+ * \param gamma the gamma value
  * \param x the first input vector
  * \param beta the beta value
  * \param y the second input vector
