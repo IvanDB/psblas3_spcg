@@ -33,6 +33,7 @@
 #include "psb_types.h"
 #include "driver_types.h"
 #include "cuComplex.h"
+#include <stdbool.h>
 
 #include "ISO_Fortran_binding.h"
 //typedef unsigned char byte;
@@ -177,11 +178,11 @@ typedef struct
 } CFIBuffer;
 
 
-static void* CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuffer* buffer)
+static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuffer* buffer)
 {
-	size_t es = d->elem_len;
-    size_t m  = (size_t)d->dim[0].extent;
-    size_t n  = (d->rank == 2) ? (size_t)d->dim[1].extent : 1;
+	size_t es = cdesc->elem_len;
+    size_t m  = (size_t)cdesc->dim[0].extent;
+    size_t n  = (cdesc->rank == 2) ? (size_t)cdesc->dim[1].extent : 1;
     size_t bytes = m * n * es;
 
 	if(buffer->devSize < bytes)

@@ -2229,6 +2229,7 @@ contains
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2266,6 +2267,7 @@ contains
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2301,6 +2303,7 @@ contains
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2336,6 +2339,7 @@ contains
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2379,6 +2383,7 @@ contains
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2400,17 +2405,21 @@ contains
     integer(psb_ipk_), intent(out)              :: info
     logical, intent(in)                         :: upd_flag
 
+    logical(c_bool) :: upd_flag_c
+
     select type(y)
       type is(psb_d_vect_cuda)
         !WIP: not optimized
         if(x%is_host()) call x%sync()
         if((upd_flag) .and. (y%is_host())) call y%sync()
-        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag)
+        upd_flag_c = upd_flag
+        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag_c)
         if(info == psb_success_) call y%set_dev()
       
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2429,17 +2438,21 @@ contains
     integer(psb_ipk_), intent(out)                  :: info
     logical, intent(in)                             :: upd_flag
 
+    logical(c_bool) :: upd_flag_c
+
     select type(y)
       type is(psb_d_multivect_cuda)
         !WIP: not optimized
         if(x%is_host()) call x%sync()
         if((upd_flag) .and. (y%is_host())) call y%sync()
-        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag)
+        upd_flag_c = upd_flag
+        info = axpbyMultiVecDevice(m, x%deviceVect, coeff, y%deviceVect, upd_flag_c)
         if(info == psb_success_) call y%set_dev()
       
       class default
         goto 9999
     end select
+    return
 
   9999 continue
     if(x%is_dev()) call x%sync()
@@ -2651,6 +2664,7 @@ contains
 
     integer(psb_ipk_) :: info
     ! WARNING: this should be changed.
+    allocate(res(x%get_ncols()), stat = info)
     if(x%is_host()) call x%sync()
     info = nrm2MultiVecDevice(res, m, x%deviceVect)
   end function d_cuda_mvect_nrm2_full
@@ -2665,7 +2679,7 @@ contains
     integer(psb_ipk_) :: info
     ! WARNING: this should be changed.
     if(x%is_host()) call x%sync()
-    info = nrm2MultiVecDevice(res, m, x%deviceVect, idx)
+    info = nrm2MultiVecDevice(res, m, x%deviceVect, idx - ione)
   end function d_cuda_mvect_nrm2_idxs
 
   subroutine d_cuda_mvect_scal(alpha, x)

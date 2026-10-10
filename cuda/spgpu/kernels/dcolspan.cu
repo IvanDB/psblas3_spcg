@@ -17,13 +17,13 @@ extern "C"
 	int getGPUMultiProcessors();
 	int getGPUMaxThreadsPerMP();
 	//#include "cuda_util.h"
+	
+	static CFIBuffer coeffBuffer;
 }
 
 #include "debug.h"
 
 #define BLOCK_SIZE 512
-
-static CFIBuffer coeffBuffer;
 
 
 __global__ void spgpuDcolspan1D_krn(int n, double* x, int pitchX, int countX, const double* coeffPtr, double* y, bool updFlag)
@@ -40,7 +40,7 @@ __global__ void spgpuDcolspan1D_krn(int n, double* x, int pitchX, int countX, co
 	}
 }
 
-__global__ void spgpuDcolspan2D_krn(int n, double* x, int pitchX, int countX, const double* coeffPtr, double* y, int pitchY, int countY, bool updFlag)
+__global__ void spgpuDcolspan2D_krn(int n, double* x, int countX, int pitchX, const double* coeffPtr, double* y, int countY, int pitchY, bool updFlag)
 {
 	size_t id = threadIdx.x + BLOCK_SIZE * blockIdx.x;
 	const size_t gridSize = blockDim.x * gridDim.x;
@@ -55,7 +55,7 @@ __global__ void spgpuDcolspan2D_krn(int n, double* x, int pitchX, int countX, co
 		}
 }
 
-void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, int pitchX, CFI_cdesc_t* coeff, __device double* y, int pitchX, bool updFlag)
+void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, int countX, int pitchX, CFI_cdesc_t* coeff, __device double* y, int countY, int pitchY, bool updFlag)
 {
     CFIBufferLoad(handle, coeff, &coeffBuffer);
 
@@ -70,8 +70,8 @@ void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, int pitchX, 
 		int num_blocks     = num_blocks_mp * num_mp;
 		dim3 grid(num_blocks);
 		dim3 block(BLOCK_SIZE);
-		if(coeff->rank == 1) spgpuDcolspan1D_krn<<<grid, block, 0, handle->currentStream>>>(n, x, coeffBuffer.devPtr, y, updFlag);
-		if(coeff->rank == 2) spgpuDcolspan2D_krn<<<grid, block, 0, handle->currentStream>>>(n, x, pitchX, coeffBuffer.devPtr, y, pitchY, updFlag);
+		if(coeff->rank == 1) spgpuDcolspan1D_krn<<<grid, block, 0, handle->currentStream>>>(n, x, countX, pitchX, (double*) coeffBuffer.devBuffer, y, updFlag);
+		if(coeff->rank == 2) spgpuDcolspan2D_krn<<<grid, block, 0, handle->currentStream>>>(n, x, countX, pitchX, (double*) coeffBuffer.devBuffer, y, countY, pitchY, updFlag);
 	#endif
 
 }

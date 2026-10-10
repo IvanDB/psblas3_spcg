@@ -120,7 +120,7 @@ double spgpuDnrm2(spgpuHandle_t handle, int n, double* x)
 	return sqrt(res);
 }
 
-void spgpuDmsnrm2(spgpuHandle_t handle, double *y, int n, __device double *x, int count, int pitch)
+void spgpuDmsnrm2(spgpuHandle_t handle, double *y, int n, __device double *x)
 {
 	#ifdef USE_CUBLAS
 		cublasDnrm2(handle->cublasHandle, n, x, 1, y);

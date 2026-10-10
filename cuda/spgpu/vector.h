@@ -541,9 +541,7 @@ void spgpuDabs(spgpuHandle_t handle,
 void spgpuDmsnrm2(spgpuHandle_t handle, 
 	double *y, 
 	int n, 
-	__device double *x, 
-	int count, 
-	int pitch);
+	__device double *x);
 
 /** 
  * \fn void spgpuDmnrm2(spgpuHandle_t handle, CFI_cdesc_t *y, int n, __device double *x, int count, int pitch)
@@ -605,20 +603,28 @@ void spgpuDaxpbycz(spgpuHandle_t handle,
 	__device double* x);
 
 /** 
- * \fn void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, CFI_cdesc_t* coeff, __device double* y, bool updFlag
- * Computes the double precision w = gamma * z + beta * y + alpha * x. w could be exactly x, y or z (without offset) or another vector.
+ * \fn void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, int countX, int pitchX, CFI_cdesc_t* coeff, __device double* y, int countY, int pitchY, bool updFlag)
+ * Computes the double precision y = x * coeff or y = y + x * coeff depending on the updFlag value. y should be a vector if coeff as rank 1 and must be a multivector if coeff is rank 2.
  * \param handle the spgpu handle used to call this routine
  * \param n the vectors' length
  * \param x the input multivector
+ * \param countX the number of vectors in x
+ * \param pitchX the x multivector pitch
  * \param coeff the CFI descrictor of the fotran array of coefficients
  * \param y the output (multi)vector
+ * \param countY the number of vectors in y
+ * \param pitchY the y multivector pitch
  * \param updFlag boolen flag: if true, the result will be added to y, otherwise it will overwrite y
  */
-void spgpuDcolspan(spgpuHandle_t handle,
-	int n,
-	__device double* x,
-	CFI_cdesc_t* coeff,
-	__device double* y,
+void spgpuDcolspan(spgpuHandle_t handle, 
+	int n, 
+	__device double* x, 
+	int countX, 
+	int pitchX, 
+	CFI_cdesc_t* coeff, 
+	__device double* y, 
+	int countY, 
+	int pitchY, 
 	bool updFlag);
 
 void spgpuDupd_xyz(spgpuHandle_t handle,

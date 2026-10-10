@@ -345,7 +345,7 @@ int colspanDeviceDouble(int n, void *devMultiVecX, CFI_cdesc_t *coeff, void *dev
   if((n > devVecY->size_) || (n > devVecX->size_)) 
     return SPGPU_UNSUPPORTED;
   
-  spgpuDcolspan(handle, n, (double*) devVecX->v_, coeff, (double*) devVecY->v_, updFlag);
+  spgpuDcolspan(handle, n, (double*) devVecX->v_, devVecX->count_, devVecX->pitch_, coeff, (double*) devVecY->v_, devVecY->count_, devVecY->pitch_, updFlag);
 
   return SPGPU_SUCCESS;
 }
@@ -394,7 +394,7 @@ int nrm2MultiVecDeviceDoubleS(double* y_res, int n, void* devMultiVecA)
   spgpuHandle_t handle = psb_cudaGetHandle();
   struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
 
-  spgpuDmsnrm2(handle, y_res, n, (double*) devVecA->v_, devVecA->count_, devVecA->pitch_);
+  spgpuDmsnrm2(handle, y_res, n, (double*) devVecA->v_);
   return SPGPU_SUCCESS;
 }
 
@@ -412,7 +412,7 @@ int nrm2MultiVecDeviceDoubleV(CFI_cdesc_t* y_res, int n, void* devMultiVecA)
   spgpuHandle_t handle = psb_cudaGetHandle();
   struct MultiVectDevice *devVecA = (struct MultiVectDevice *) devMultiVecA;
 
-  spgpuDmnrm2(handle, y_res, n, (double*) devVecA->v_, devVecA->count_, devVecA->pitch_);
+  spgpuDmvnrm2(handle, y_res, n, (double*) devVecA->v_, devVecA->count_, devVecA->pitch_);
   return SPGPU_SUCCESS;
 }
 
