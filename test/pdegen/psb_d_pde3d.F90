@@ -668,8 +668,12 @@ program psb_d_pde3d
   use psb_base_mod
   use psb_prec_mod
   use psb_linsolve_mod
+  use psb_eigsolve_mod
   use psb_util_mod
   use psb_d_pde3d_mod
+#if defined(PSB_HAVE_CUDA)
+   use psb_cuda_mod
+#endif
 #if defined(PSB_OPENMP)
   use omp_lib
 #endif
@@ -696,10 +700,36 @@ program psb_d_pde3d
   type(psb_ctxt_type) :: ctxt
   integer(psb_ipk_)   :: iam, np, nth
 
+  ! GPU variables
+   type(psb_d_ell_sparse_mat), target    :: aell
+   type(psb_d_csr_sparse_mat), target   :: acsr
+   type(psb_d_csc_sparse_mat), target   :: acsc
+   type(psb_d_coo_sparse_mat), target   :: acoo
+   type(psb_d_hll_sparse_mat), target    :: ahll
+   type(psb_d_hdia_sparse_mat), target  :: ahdia
+   type(psb_d_dns_sparse_mat), target   :: adns
+   type(psb_d_base_vect_type), target   :: dvect
+   type(psb_i_base_vect_type), target   :: ivect
+#if defined(PSB_HAVE_CUDA)
+   type(psb_d_cuda_hlg_sparse_mat), target   :: ahlg
+   type(psb_d_cuda_csrg_sparse_mat), target   :: acsrg
+   type(psb_d_cuda_elg_sparse_mat), target    :: aelg
+   type(psb_d_cuda_hdiag_sparse_mat), target :: ahdiag
+   type(psb_d_vect_cuda), target         :: dvgpu
+   type(psb_i_vect_cuda), target         :: ivgpu
+   class(psb_d_base_sparse_mat), pointer :: amold => ahlg
+   class(psb_d_base_vect_type), pointer :: vmold => dvgpu
+   class(psb_i_base_vect_type), pointer :: imold => ivgpu
+#else
+   class(psb_d_base_sparse_mat), pointer :: amold => acsr
+   class(psb_d_base_vect_type), pointer :: vmold => dvect
+   class(psb_i_base_vect_type), pointer :: imold => ivect
+#endif
+
   ! solver parameters
   integer(psb_ipk_) :: iter, itmax,itrace, istopc, irst, ipart
   integer(psb_epk_) :: amatsize, precsize, descsize, d2size
-  real(psb_dpk_)   :: err, eps
+  real(psb_dpk_)   :: err, eps, eigext(2)
 
   ! Parameters for solvers in Block-Jacobi preconditioner
   type ainvparms
@@ -719,6 +749,11 @@ program psb_d_pde3d
 
   call psb_init(ctxt)
   call psb_info(ctxt,iam,np)
+
+#if defined(PSB_HAVE_CUDA)
+   call psb_cuda_init(ctxt)
+#endif
+
 #if defined(PSB_OPENMP)
   !$OMP parallel shared(nth)
   !$OMP master
@@ -744,6 +779,10 @@ program psb_d_pde3d
     write(*,*) 'Welcome to PSBLAS version: ',psb_version_string_
     write(*,*) 'This is the ',trim(name),' sample program'
   end if
+#if defined(PSB_HAVE_CUDA)
+   write(*,*) 'Process ',iam,' running on device: ', psb_cuda_getDevice(),' out of', psb_cuda_getDeviceCount()
+   write(*,*) 'Process ',iam,' device ', psb_cuda_getDevice(),' is a: ', trim(psb_cuda_DeviceName())
+#endif
   !
   !  get parameters
   !
@@ -804,6 +843,22 @@ program psb_d_pde3d
     ! nothing to set for NONE or DIAG preconditioner
   end if
 
+  ! Select the appropriate GPU format
+  if( iam == psb_root_) write(psb_out_unit,'("Converting matrix to GPU format")')
+#ifdef PSB_HAVE_CUDA
+      amold => ahlg
+      vmold => dvgpu
+      imold => ivgpu
+#else
+      amold => acsr
+      vmold => dvect
+      imold => ivect
+#endif
+
+  ! Convert A, DESC_A,X,B to a GPU-enabled format
+  call desc_a%cnv(mold=imold)
+  call a%cscnv(info,mold=amold)
+
   call psb_barrier(ctxt)
   t1 = psb_wtime()
   call prec%build(a,desc_a,info)
@@ -821,6 +876,14 @@ program psb_d_pde3d
   if (iam == psb_root_) write(psb_out_unit,'("Preconditioner time : ",es12.5)')tprec
   if (iam == psb_root_) write(psb_out_unit,'(" ")')
   call prec%descr(info)
+
+
+  if((psb_toupper(trim(kmethd)) == 'SSTEPCG') .or. (psb_toupper(trim(kmethd)) == 'SSTEPCG1')) then
+    call psb_barrier(ctxt)
+    call psb_powermethod(a, prec, eigext(2), desc_a, info)
+    call psb_barrier(ctxt)
+  end if
+
   !
   ! iterative method parameters
   !
@@ -834,10 +897,11 @@ program psb_d_pde3d
          & desc_a,info,itmax=itmax,iter=iter,&
          & err=err,itrace=itrace,&
          & istop=istopc)
-  case('BICGSTAB','BICGSTABL','BICG','CG','CGS','FCG','GCR','RGMRES')
+  case('BICGSTAB','BICGSTABL','BICG','CG','CGS','FCG','GCR','RGMRES', 'SSTEPCG', 'SSTEPCG1')
     call psb_krylov(kmethd,a,prec,bv,xxv,eps,&
          & desc_a,info,itmax=itmax,iter=iter,err=err,itrace=itrace,&
-         & istop=istopc,irst=irst)
+         & istop=istopc,irst=irst, steps = 5, &
+         & base_type = 'C', eigext = eigext)
   case default
     write(psb_err_unit,*) 'Unknown method :"',trim(kmethd),'"'
     info=psb_err_invalid_input_
