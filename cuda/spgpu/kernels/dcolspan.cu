@@ -10,21 +10,26 @@
 #include "cudalang.h"
 #include <cuda_runtime.h>
 #include "core.h"
+#include "cublas_v2.h"
 
 extern "C"
 {
 	#include "vector.h"
+	//#include "cuda_util.h"
 	int getGPUMultiProcessors();
 	int getGPUMaxThreadsPerMP();
-	//#include "cuda_util.h"
+	cublasHandle_t psb_cudaGetCublasHandle();
 	
 	static CFIBuffer coeffBuffer;
+	static double cuDone = 1.0;
+	static double cuDzero = 0.0;
 }
 
 #include "debug.h"
 
 #define BLOCK_SIZE 512
 
+#define USE_CUBLAS 1
 
 __global__ void spgpuDcolspan1D_krn(int n, double* x, int pitchX, int countX, const double* coeffPtr, double* y, bool updFlag)
 {
@@ -60,9 +65,10 @@ void spgpuDcolspan(spgpuHandle_t handle, int n, __device double* x, int countX, 
     CFIBufferLoad(handle, coeff, &coeffBuffer);
 
 	#if USE_CUBLAS
-		double rhsFactor = updFlag ? 1.0 : 0.0;
-		if(coeff->rank == 1) cublasDgemv(handle->cublasHandle, ...);
-		if(coeff->rank == 2) cublasDgemm(handle->cublasHandle, ...);
+		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
+		double* beta = updFlag ? (&cuDone) : (&cuDzero);
+		if(coeff->rank == 1) cublasDgemv(cublasHandle, CUBLAS_OP_N, n, countX, &cuDone, x, pitchX, (double*) coeffBuffer.devBuffer, 1, beta, y, 1);
+		if(coeff->rank == 2) cublasDgemm(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, n, countY, countX, &cuDone, x, pitchX, (double*) coeffBuffer.devBuffer, countX, beta, y, pitchY);
 	#else
 		int num_mp         = getGPUMultiProcessors();
 		int max_threads_mp = getGPUMaxThreadsPerMP();
