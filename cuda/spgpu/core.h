@@ -178,6 +178,16 @@ typedef struct
 } CFIBuffer;
 
 
+static void CFIBufferAlloc(CFIBuffer* buffer, size_t byteCount)
+{
+	if(buffer->devSize >= byteCount)
+		return;
+
+	cudaFree(buffer->devBuffer);
+	cudaMalloc(&(buffer->devBuffer), byteCount);
+	buffer->devSize = byteCount;
+}
+
 static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuffer* buffer)
 {
 	size_t es = cdesc->elem_len;
@@ -185,12 +195,7 @@ static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuf
     size_t n  = (cdesc->rank == 2) ? (size_t)cdesc->dim[1].extent : 1;
     size_t bytes = m * n * es;
 
-	if(buffer->devSize < bytes)
-	{
-		cudaFree(buffer->devBuffer);
-		cudaMalloc(&(buffer->devBuffer), bytes);
-		buffer->devSize = bytes;
-	}
+	CFIBufferAlloc(buffer, bytes);
 
 	if(CFI_is_contiguous(cdesc))
 		cudaMemcpyAsync(buffer->devBuffer, cdesc->base_addr, bytes, cudaMemcpyHostToDevice, handle->currentStream);
@@ -198,6 +203,19 @@ static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuf
 		printf("CFI buffer is not contiguous, this is WIP\n");
 }
 
+static void CFIBufferStore(spgpuHandle_t handle, CFI_cdesc_t* cdesc, CFIBuffer* buffer, size_t bytes)
+{
+	size_t es = cdesc->elem_len;
+    size_t m  = (size_t)cdesc->dim[0].extent;
+    size_t n  = (cdesc->rank == 2) ? (size_t)cdesc->dim[1].extent : 1;
+    if(bytes > m * n * es) 
+		return;
+	
+	if(CFI_is_contiguous(cdesc))
+		cudaMemcpy(cdesc->base_addr, buffer->devBuffer, bytes, cudaMemcpyDeviceToHost);
+	else
+		printf("CFI buffer is not contiguous, this is WIP\n");
+}
 
 #define cuFloatComplex_isZero(a) 		(a.x == 0.0f && a.y == 0.0f)
 #define cuDoubleComplex_isZero(a) 		(a.x == 0.0  && a.y == 0.0)

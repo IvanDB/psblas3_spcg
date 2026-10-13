@@ -10,15 +10,21 @@
 #include "cudalang.h"
 #include "cudadebug.h"
 #include "core.h"
+#include "cublas_v2.h"
 
 extern "C"
 {
 	#include "vector.h"
+	cublasHandle_t psb_cudaGetCublasHandle();
+	static double cuDone = 1.0;
+	static double cuDzero = 0.0;
+
+	static CFIBuffer dotBuffer;
 }
 
 #define BLOCK_SIZE 512
+#define USE_CUBLAS 1
 
-// #define USE_CUBLAS
 // #define ASSUME_LOCK_SYNC_PARALLELISM
 
 static __device__ double ddotReductionResult[128];
@@ -130,8 +136,8 @@ void spgpuDmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __de
 void spgpuDmsdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b)
 {
 	#ifdef USE_CUBLAS
-		cublasDdot(handle->cublasHandle, n, a, 1, b, 1, y);
-		cudaDeviceSynchronize();
+		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
+		cublasDdot(cublasHandle, n, a, 1, b, 1, y);
 	#else
 		*y = spgpuDdot(handle, n, a, b);
 	#endif
@@ -139,7 +145,7 @@ void spgpuDmsdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 
 void spgpuDmvdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA)
 {
-	#ifdef USE_CUBLAS
+	#if 0
 		double res[countA];
 		cublasDgemv(handle->cublasHandle, CUBLAS_OP_T, n, countA, &c_done, a, pitchA, b, &c_done, &c_dzero, res, 1);
 		cudaDeviceSynchronize();
@@ -155,11 +161,12 @@ void spgpuDmvdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 void spgpuDmvdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA)
 {
 	#ifdef USE_CUBLAS
-		double res[countA];
-		cublasDgemv(handle->cublasHandle, CUBLAS_OP_T, n, countA, &c_done, a, pitchA, b, &c_done, &c_dzero, res, 1);
+		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
+		CFIBufferAlloc(&dotBuffer, countA * (y->elem_len));
+		cublasDgemv(cublasHandle, CUBLAS_OP_T, n, countA, &cuDone, a, pitchA, b, 1, &cuDzero, (double*) dotBuffer.devBuffer, 1);
 		cudaDeviceSynchronize();
-		for(int i = 0; i < countA; ++i)
-			CFI_AT1(double, y, i) = res[i];
+		CFIBufferStore(handle, y, &dotBuffer, countA * (y->elem_len));
+		cudaDeviceSynchronize();
 	#else
 		//TO DO: optimize with custom gemv kernel?
 		for(int i = 0; i < countA; ++i)
@@ -169,7 +176,7 @@ void spgpuDmvdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device doubl
 
 void spgpuDmmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
 {
-	#ifdef USE_CUBLAS
+	#if 0
 		double res[countA*countB];
 		cublasDgemm(handle->cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, countA, countB, n, &c_done, a, pitchA, b, &c_done, &c_zero, res, countA);
 		cudaDeviceSynchronize();
@@ -187,12 +194,12 @@ void spgpuDmmdot(spgpuHandle_t handle, double* y, int n, __device double* a, __d
 void spgpuDmmdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device double* a, __device double* b, int countA, int pitchA, int countB, int pitchB)
 {
 	#ifdef USE_CUBLAS
-		double res[countA*countB];
-		cublasDgemv(handle->cublasHandle, CUBLAS_OP_T, n, countA, &c_done, a, pitchA, b, &c_done, &c_dzero, res, 1);
+		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
+		CFIBufferAlloc(&dotBuffer, countA * countB * (y->elem_len));
+		cublasDgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, countA, countB, n, &cuDone, a, pitchA, b, pitchB, &cuDzero, (double*) dotBuffer.devBuffer, countA);
 		cudaDeviceSynchronize();
-		for(int i = 0; i < countA; ++i)
-			for(int j = 0; j < countB; ++j)
-				CFI_AT2(double, y, i, j) = res[i*countA + j];
+		CFIBufferStore(handle, y, &dotBuffer, countA * countB * (y->elem_len));
+		cudaDeviceSynchronize();
 	#else
 		//TO DO: optimize with custom gemm kernel?
 		for(int i = 0; i < countA; ++i)
