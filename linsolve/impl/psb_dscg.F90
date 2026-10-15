@@ -6,6 +6,9 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   use psb_d_linsolve_conv_mod
   use psb_linsolve_mod
   use psb_pMPK_mod
+#if defined(PSB_HAVE_CUDA)
+  use psb_cuda_mod
+#endif
 
   implicit none
   type(psb_dspmat_type), intent(in)     :: a
@@ -49,6 +52,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
+
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda) :: mvect_mold
+  type(psb_d_vect_cuda) :: vect_mold
+#else
+  type(psb_d_base_multivect_type) :: mvect_mold
+  type(psb_d_base_vect_type) :: vect_mold
+#endif
 
   info = psb_success_
   call psb_erractionsave(err_act)
@@ -129,13 +140,13 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
-  if (info == psb_success_) call psb_geasb(r, desc_a, info)
-  if (info == psb_success_) call psb_geasb(Z, desc_a, info)
-  if (info == psb_success_) call psb_geasb(Q, desc_a, info)
-  if (info == psb_success_) call psb_geasb(P, desc_a, info)
-  if (info == psb_success_) call psb_geasb(V, desc_a, info)
-  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
-  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_geasb(r, desc_a, info, mold = vect_mold)
+  if (info == psb_success_) call psb_geasb(Z, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(Q, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(P, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(V, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info, mold = mvect_mold)
 
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
@@ -367,6 +378,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   use psb_d_linsolve_conv_mod
   use psb_linsolve_mod
   use psb_pMPK_mod
+#if defined(PSB_HAVE_CUDA)
+  use psb_cuda_mod
+#endif
 
   implicit none
   type(psb_dspmat_type), intent(in)     :: a
@@ -410,6 +424,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
+
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda) :: mvect_mold
+  type(psb_d_vect_cuda) :: vect_mold
+#else
+  type(psb_d_base_multivect_type) :: mvect_mold
+  type(psb_d_base_vect_type) :: vect_mold
+#endif
 
   info = psb_success_
   call psb_erractionsave(err_act)
@@ -490,13 +512,13 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
   if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
-  if (info == psb_success_) call psb_geasb(r, desc_a, info)
-  if (info == psb_success_) call psb_geasb(Z, desc_a, info)
-  if (info == psb_success_) call psb_geasb(Q, desc_a, info)
-  if (info == psb_success_) call psb_geasb(P, desc_a, info)
-  if (info == psb_success_) call psb_geasb(V, desc_a, info)
-  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
-  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_geasb(r, desc_a, info, mold = vect_mold)
+  if (info == psb_success_) call psb_geasb(Z, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(Q, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(P, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(V, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info, mold = mvect_mold)
 
   if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
