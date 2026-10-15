@@ -2515,7 +2515,7 @@ contains
   end subroutine d_cuda_mvect_dot_mv
 
   subroutine d_cuda_mvect_mlt_v_full(m, alpha, x, y, beta, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)               :: m
     real(psb_dpk_), intent(in)                  :: alpha, beta
@@ -2523,10 +2523,37 @@ contains
     class(psb_d_multivect_cuda), intent(inout)  :: y
     integer(psb_ipk_), intent(out)              :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+
+        !Temp
+        conjgx_ = .false.
+        if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+        conjgy_ = .false.
+        if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+        info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, conjgx_, conjgy_)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_mlt_v_full
 
   subroutine d_cuda_mvect_mlt_v_idxs(m, alpha, x, y, idx_y, beta, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)               :: m
     real(psb_dpk_), intent(in)                  :: alpha, beta
@@ -2535,10 +2562,36 @@ contains
     integer(psb_ipk_), intent(in)               :: idx_y
     integer(psb_ipk_), intent(out)              :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+
+        !Temp
+        conjgx_ = .false.
+        if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+        conjgy_ = .false.
+        if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+        info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, idx_y, beta, conjgx_, conjgy_)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, idx_y, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_mlt_v_idxs
 
   subroutine d_cuda_mvect_mlt_m_full(m, alpha, x, y, beta, info, conjgx, conjgy)
-    use psi_serial_mod
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2546,10 +2599,36 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: y
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+
+        !Temp
+        conjgx_ = .false.
+        if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+        conjgy_ = .false.
+        if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+        info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, conjgx_, conjgy_)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_mlt_m_full
 
   subroutine d_cuda_mvect_mlt_m_idxs(m, alpha, x, idx_x, y, idx_y, beta, info, conjgx, conjgy)
-    use psi_serial_mod
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2558,10 +2637,37 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: y
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        if(x%is_host()) call x%sync()
+        if(y%is_host()) call y%sync()
+
+        !Temp
+        conjgx_ = .false.
+        if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+        conjgy_ = .false.
+        if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+        info = mltMultiVecDevice(m, alpha, x%deviceVect, idx_x, y%deviceVect, idx_y, beta, conjgx_, conjgy_)
+        if(info == psb_success_) call y%set_dev()
+
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, idx_x, idx_y, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_mlt_m_idxs
 
   subroutine d_cuda_mvect_mlt_vv_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)               :: m
     real(psb_dpk_), intent(in)                  :: alpha, beta
@@ -2569,10 +2675,45 @@ contains
     class(psb_d_multivect_cuda), intent(inout)  :: z
     integer(psb_ipk_), intent(out)              :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_vect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, z%deviceVect, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, y, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_vv_full_out
 
   subroutine d_cuda_mvect_mlt_vv_idxs_out(m, alpha, x, y, beta, z, idx_z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)               :: m
     real(psb_dpk_), intent(in)                  :: alpha, beta
@@ -2581,10 +2722,45 @@ contains
     integer(psb_ipk_), intent(in)               :: idx_z
     integer(psb_ipk_), intent(out)              :: info
     character(len=1), intent(in), optional  :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_vect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, z%deviceVect, idx_z, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, y, beta, idx_z, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_vv_idxs_out
 
   subroutine d_cuda_mvect_mlt_vm_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2593,10 +2769,45 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, z%deviceVect, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, y, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_vm_full_out
 
   subroutine d_cuda_mvect_mlt_vm_idxs_out(m, alpha, x, y, idx_y, beta, z, idx_z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2606,10 +2817,44 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, idx_y, beta, z%deviceVect, idx_z, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, y, idx_y, beta, idx_z, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_vm_idxs_out
 
   subroutine d_cuda_mvect_mlt_mm_full_out(m, alpha, x, y, beta, z, info, conjgx, conjgy)
-    use psi_serial_mod
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2617,10 +2862,44 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, beta, z%deviceVect, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, y, beta, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_mm_full_out
 
   subroutine d_cuda_mvect_mlt_mm_idxs_out(m, alpha, x, idx_x, y, idx_y, beta, z, idx_z, info, conjgx, conjgy)
-    use psi_serial_mod
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2629,10 +2908,46 @@ contains
     class(psb_d_multivect_cuda), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(y)
+          type is(psb_d_multivect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, idx_x, y%deviceVect, idx_y, &
+                                        & beta, z%deviceVect, idx_z, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call z%psb_d_base_multivect_type%mlt(m, alpha, x, idx_x, y, idx_y, beta, idx_z, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_mm_idxs_out
 
   subroutine d_cuda_mvect_mlt_vm_ext(m, alpha, x, y, idx_y, beta, z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2641,10 +2956,45 @@ contains
     integer(psb_ipk_), intent(in)                   :: idx_y
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_vect_cuda)
+        select type(z)
+          type is(psb_d_vect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, y%deviceVect, idx_y, beta, z%deviceVect, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, idx_y, beta, z, info, conjgx, conjgy)
+    if(info == psb_success_) call y%set_host()
   end subroutine d_cuda_mvect_mlt_vm_ext
 
   subroutine d_cuda_mvect_mlt_mm_ext(m, alpha, x, idx_x, y, idx_y, beta, z, info, conjgx, conjgy)
-    use psi_serial_mod
+    use psb_d_cuda_vect_mod, only : psb_d_vect_cuda
     implicit none
     integer(psb_ipk_), intent(in)                   :: m
     real(psb_dpk_), intent(in)                      :: alpha, beta
@@ -2654,6 +3004,41 @@ contains
     class(psb_d_base_vect_type), intent(inout)      :: z
     integer(psb_ipk_), intent(out)                  :: info
     character(len=1), intent(in), optional          :: conjgx, conjgy
+
+    logical(c_bool) :: conjgx_, conjgy_
+
+    select type(x)
+      type is(psb_d_multivect_cuda)
+        select type(z)
+          type is(psb_d_vect_cuda)
+            if(x%is_host()) call x%sync()
+            if(y%is_host()) call y%sync()
+            if(z%is_host()) call z%sync()
+
+            !Temp
+            conjgx_ = .false.
+            if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
+            conjgy_ = .false.
+            if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
+
+            info = mltMultiVecDevice(m, alpha, x%deviceVect, idx_x, y%deviceVect, idx_y, beta, z%deviceVect, conjgx_, conjgy_)
+            if(info == psb_success_) call y%set_dev()
+
+          class default
+            goto 9999
+        end select
+      
+      class default
+        goto 9999
+    end select
+    return
+
+  9999 continue
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    if(z%is_dev()) call z%sync()
+    call y%psb_d_base_multivect_type%mlt(m, alpha, x, idx_x, idx_y, beta, z, info, conjgx, conjgy)
+    if(info == psb_success_) call z%set_host()
   end subroutine d_cuda_mvect_mlt_mm_ext
 
   function d_cuda_mvect_nrm2_full(m, x) result(res)

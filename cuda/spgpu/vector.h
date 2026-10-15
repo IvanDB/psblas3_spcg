@@ -501,6 +501,45 @@ void spgpuDmmdot_CFI(spgpuHandle_t handle,
 	int countB,
 	int pitchB);
 
+
+/** 
+ * \fn float spgpuDmlt (spgpuHandle_t handle, __device double* z, int countZ, int pitchZ, 
+ * 						int n, double alpha, __device double* x, int countX, int pitchY,
+ * 											 __device double* y, int countY, int pitchY, 
+ * 						double beta, bool conjgX, bool conjgY)
+ * Computes z = alpha * op(x) * op(y) + beta * z with x, y, z vectors/multivectors possibly using multiple column both in input or output
+ * \param handle the spgpu handle used to call this routine
+ * \param z the output multivector
+ * \param countX the number of vectors in multivector Z
+ * \param pitchX the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ * \param n the vectors' length
+ * \param alpha the first scalar coefficient
+ * \param y the second input multivector
+ * \param countY the number of vectors in multivector y
+ * \param pitchY the pitch, in number of elements, of multivector b (so the second element of the first vector in b will be b[pitch], the third b[2*pitch], etc.).
+ * \param x the first input multivector
+ * \param countX the number of vectors in multivector x
+ * \param pitchX the pitch, in number of elements, of multivector a (so the second element of the first vector in a will be a[pitch], the third a[2*pitch], etc.).
+ * \param beta the second scalar coefficient
+ * \param congjx boolean flag 
+ * \param congjy boolean flag 
+ */
+void spgpuDmlt(spgpuHandle_t handle, 
+	__device double* z, 
+	int countZ, 
+	int pitchZ, 
+	int n, 
+	double alpha, 
+	__device double* x, 
+	int countX, 
+	int pitchX,
+	__device double* y, 
+	int countY, 
+	int pitchY, 
+	double beta, 
+	bool conjgX, 
+	bool conjgY);
+
 /** 
  * \fn void spgpuDabs (spgpuHandle_t handle, __device double* y, int n, double alpha, __device double* x)
  * Computes double precision (y = alpha * abs(x)) for each element in x.

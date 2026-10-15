@@ -90,6 +90,16 @@ int dotMultiVecDeviceDoubleV_CFI(CFI_cdesc_t* y_res, int n, void* devVecA, void*
 int dotMultiVecDeviceDoubleM_CFI(CFI_cdesc_t* y_res, int n, void* devVecA, void* devVecB);
 
 //Elementwise operations
+int mltMultiVecDeviceDouble1(int n, double alpha, void* devVecX, void* devVecY, double beta, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble2(int n, double alpha, void* devVecX, void* devVecY, double beta, int idxY, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble3(int n, double alpha, void* devVecX, int idxX, void* devVecY, int idxY, double beta, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble4(int n, double alpha, void* devVecX, void* devVecY, double beta, void* devVecZ, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble5(int n, double alpha, void* devVecX, void* devVecY, double beta, void* devVecZ, int idxZ, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble6(int n, double alpha, void* devVecX, void* devVecY, int idxY, double beta, void* devVecZ, int idxZ, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble7(int n, double alpha, void* devVecX, int idxX, void* devVecY, int idxY, double beta, void* devVecZ, int idxZ, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble8(int n, double alpha, void* devVecX, void* devVecY, int idxY, double beta, void* devVecZ, bool conjgX, bool conjgY); 
+int mltMultiVecDeviceDouble9(int n, double alpha, void* devVecX, int idxX, void* devVecY, int idxY, double beta, void* devVecZ, bool conjgX, bool conjgY); 
+
 int axyMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB);
 int axybzMultiVecDeviceDouble(int n, double alpha, void *deviceVecA, void *deviceVecB, double beta, void *deviceVecZ);
 

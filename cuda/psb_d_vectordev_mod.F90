@@ -461,6 +461,108 @@ module psb_d_vectordev_mod
     end function colspan2DDeviceDouble
   end interface
 
+  interface mltMultiVecDevice
+    function mltMultiVecDeviceDouble1(n, alpha, deviceVecA, deviceVecB, &
+                                        & beta, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble1')
+      use iso_c_binding
+      integer(c_int), value   :: n
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble1
+    
+    function mltMultiVecDeviceDouble2(n, alpha, deviceVecA, deviceVecB, idxB, &
+                                        & beta, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble2')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxB
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble2
+    
+    function mltMultiVecDeviceDouble3(n, alpha, deviceVecA, idxA, deviceVecB, idxB, &
+                                        & beta, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble3')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxA, idxB
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble3
+    
+    function mltMultiVecDeviceDouble4(n, alpha, deviceVecA, deviceVecB, &
+                                        & beta, deviceVecC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble4')
+      use iso_c_binding
+      integer(c_int), value   :: n
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble4
+    
+    function mltMultiVecDeviceDouble5(n, alpha, deviceVecA, deviceVecB, &
+                                        & beta, deviceVecC, idxC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble5')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxC
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble5
+    
+    function mltMultiVecDeviceDouble6(n, alpha, deviceVecA, deviceVecB, idxB, &
+                                        & beta, deviceVecC, idxC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble6')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxB, idxC
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble6
+    
+    function mltMultiVecDeviceDouble7(n, alpha, deviceVecA, idxA, deviceVecB, idxB, &
+                                        & beta, deviceVecC, idxC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble7')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxA, idxB, idxC
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble7
+
+    function mltMultiVecDeviceDouble8(n, alpha, deviceVecA, deviceVecB, idxB, &
+                                        & beta, deviceVecC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble8')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxB
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble8
+
+    function mltMultiVecDeviceDouble9(n, alpha, deviceVecA, idxA, deviceVecB, idxB, &
+                                        & beta, deviceVecC, conjgA, conjgB) result(res) &
+            & bind(c, name = 'mltMultiVecDeviceDouble9')
+      use iso_c_binding
+      integer(c_int), value   :: n, idxA, idxB
+      real(c_double), value   :: alpha, beta
+      type(c_ptr), value      :: deviceVecA, deviceVecB, deviceVecC
+      logical(c_bool), value  :: conjgA, conjgB
+      integer(c_int)  :: res
+    end function mltMultiVecDeviceDouble9
+  end interface
+
+
   interface upd_xyzMultiVecDevice
     function upd_xyzMultiVecDeviceDouble(n, alpha, beta, gamma, delta, deviceVecX, &
          & deviceVecY, deviceVecZ) &
