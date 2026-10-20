@@ -28,51 +28,47 @@
   /* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE */
   /* POSSIBILITY OF SUCH DAMAGE. */
 
-int T_spmvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX,
-		     TYPE beta, void *deviceY)
+
+static inline int T_spmvCSRGDevice_(T_Cmat *matrix, TYPE alpha, void *deviceX, int idxX, TYPE beta, void *deviceY, int idxY)
 {
-  T_CSRGDeviceMat *cMat=Matrix->mat;
+  cusparseHandle_t *my_handle = getHandle();
+  T_CSRGDeviceMat *cMat = matrix->mat;
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
   struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
-  void *vX, *vY;
-  int r,n;
-  cusparseHandle_t *my_handle=getHandle();
-  TYPE   ealpha=alpha, ebeta=beta;
+  void *vX = (void*) (((TYPE *) x->v_) + (idxX * x->pitch_));
+  void *vY = (void*) (((TYPE *) y->v_) + (idxY * y->pitch_));
+  TYPE ealpha = alpha, ebeta = beta;
+
 #if PSB_CUDA_SHORT_VERSION <= 10
   /* getAddrMultiVecDevice(deviceX, &vX); */
-  /*   getAddrMultiVecDevice(deviceY, &vY);  */
-  vX=x->v_;
-  vY=y->v_;
+  /* getAddrMultiVecDevice(deviceY, &vY); */
 
-  CHECK_CUSPARSE(cusparseTcsrmv(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-				cMat->m,cMat->n,cMat->nz,(const TYPE *) &alpha,cMat->descr,
-				cMat->val, cMat->irp, cMat->ja,
-				(const TYPE *) vX, (const TYPE *) &beta, (TYPE *) vY));
+  CHECK_CUSPARSE(cusparseTcsrmv(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, cMat->m, cMat->n, cMat->nz, 
+                                (const TYPE *) &alpha, cMat->descr, cMat->val, cMat->irp, cMat->ja,
+                                (const TYPE *) vX, (const TYPE *) &beta, (TYPE *) vY));
   
-#elif PSB_CUDA_VERSION <  11030
+#elif PSB_CUDA_VERSION < 11030
   size_t bfsz;
-  vX=x->v_;
-  vY=y->v_;
-#if 1
-  CHECK_CUSPARSE(cusparseCsrmvEx_bufferSize(*my_handle,CUSPARSE_ALG_MERGE_PATH,
-					    CUSPARSE_OPERATION_NON_TRANSPOSE,
-					    cMat->m,cMat->n,cMat->nz,	    
-					    (const void *) &ealpha,CUSPARSE_BASE_TYPE,
-					    cMat->descr,
-					    (const void *) cMat->val,
-					    CUSPARSE_BASE_TYPE,
-					    (const int *) cMat->irp,
-					    (const int *) cMat->ja,
-					    (const void *) vX, CUSPARSE_BASE_TYPE,
-					    (const void *) &ebeta, CUSPARSE_BASE_TYPE,
-					    (void *) vY, CUSPARSE_BASE_TYPE,
-					    CUSPARSE_BASE_TYPE, &bfsz));
-#else 
-  bfsz=cMat->nz;
-#endif
+  #if 1
+    CHECK_CUSPARSE(cusparseCsrmvEx_bufferSize(*my_handle, CUSPARSE_ALG_MERGE_PATH,
+                                              CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                              cMat->m, cMat->n, cMat->nz,	    
+                                              (const void*) &ealpha, CUSPARSE_BASE_TYPE,
+                                              cMat->descr,
+                                              (const void*) cMat->val, CUSPARSE_BASE_TYPE,
+                                              (const int*) cMat->irp, (const int*) cMat->ja,
+                                              (const void*) vX, CUSPARSE_BASE_TYPE,
+                                              (const void*) &ebeta, CUSPARSE_BASE_TYPE,
+                                              (void*) vY, CUSPARSE_BASE_TYPE,
+                                              CUSPARSE_BASE_TYPE, &bfsz));
+  #else 
+    bfsz = cMat->nz;
+  #endif
   
-  if (bfsz > cMat->mvbsize) {
-    if (cMat->mvbuffer != NULL) {
+  if (bfsz > cMat->mvbsize) 
+  {
+    if (cMat->mvbuffer != NULL) 
+    {
       CHECK_CUDA(cudaFree(cMat->mvbuffer));
       cMat->mvbuffer = NULL;
     }
@@ -80,37 +76,37 @@ int T_spmvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX,
     allocRemoteBuffer((void **) &(cMat->mvbuffer), (size_t) bfsz);
     cMat->mvbsize = bfsz;
   }
-  CHECK_CUSPARSE(cusparseCsrmvEx(*my_handle,
-				 CUSPARSE_ALG_MERGE_PATH,
-				 CUSPARSE_OPERATION_NON_TRANSPOSE,
-				 cMat->m,cMat->n,cMat->nz,	    
-				 (const void *) &ealpha,CUSPARSE_BASE_TYPE,
-				 cMat->descr,
-				 (const void *) cMat->val, CUSPARSE_BASE_TYPE,
-				 (const int *) cMat->irp, (const int *) cMat->ja,
-				 (const void *) vX, CUSPARSE_BASE_TYPE,
-				 (const void *) &ebeta, CUSPARSE_BASE_TYPE,
-				 (void *) vY, CUSPARSE_BASE_TYPE,
-				 CUSPARSE_BASE_TYPE, (void *) cMat->mvbuffer));
 
+  CHECK_CUSPARSE(cusparseCsrmvEx(*my_handle, CUSPARSE_ALG_MERGE_PATH,
+                                  CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                  cMat->m, cMat->n, cMat->nz,	    
+                                  (const void*) &ealpha, CUSPARSE_BASE_TYPE,
+                                  cMat->descr,
+                                  (const void*) cMat->val, CUSPARSE_BASE_TYPE,
+                                  (const int*) cMat->irp, (const int*) cMat->ja,
+                                  (const void*) vX, CUSPARSE_BASE_TYPE,
+                                  (const void*) &ebeta, CUSPARSE_BASE_TYPE,
+                                  (void*) vY, CUSPARSE_BASE_TYPE,
+                                  CUSPARSE_BASE_TYPE, (void*) cMat->mvbuffer));
 #else
   cusparseDnVecDescr_t vecX, vecY;
   size_t bfsz;
 
-  if (T_CSRGIsNullMvDescr(cMat)) {
+  if(T_CSRGIsNullMvDescr(cMat))
     cMat->spmvDescr = (cusparseSpMatDescr_t  *) malloc(sizeof(cusparseSpMatDescr_t  *));
-  }
+
   T_CSRGCreateSpMVDescr(cMat);
-  vX=x->v_;
-  vY=y->v_;
-  CHECK_CUSPARSE( cusparseCreateDnVec(&vecY, cMat->m, vY, CUSPARSE_BASE_TYPE) );
-  CHECK_CUSPARSE( cusparseCreateDnVec(&vecX, cMat->n, vX, CUSPARSE_BASE_TYPE) );
-  CHECK_CUSPARSE(cusparseSpMV_bufferSize(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-					 &alpha,(*(cMat->spmvDescr)),vecX,&beta,vecY,
-					 CUSPARSE_BASE_TYPE,CUSPARSE_SPMV_ALG_DEFAULT,
-					 &bfsz));
-  if (bfsz > cMat->mvbsize) {
-    if (cMat->mvbuffer != NULL) {
+
+  CHECK_CUSPARSE(cusparseCreateDnVec(&vecY, cMat->m, vY, CUSPARSE_BASE_TYPE));
+  CHECK_CUSPARSE(cusparseCreateDnVec(&vecX, cMat->n, vX, CUSPARSE_BASE_TYPE));
+  CHECK_CUSPARSE(cusparseSpMV_bufferSize(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                          &alpha, (*(cMat->spmvDescr)), vecX, &beta, vecY,
+                                          CUSPARSE_BASE_TYPE, CUSPARSE_SPMV_ALG_DEFAULT,
+                                          &bfsz));
+  if (bfsz > cMat->mvbsize) 
+  {
+    if (cMat->mvbuffer != NULL) 
+    {
       CHECK_CUDA(cudaFree(cMat->mvbuffer));
       cMat->mvbuffer = NULL;
     }
@@ -119,19 +115,118 @@ int T_spmvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX,
     
     cMat->mvbsize = bfsz;
   }
-  CHECK_CUSPARSE(cusparseSpMV(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-			      &alpha,(*(cMat->spmvDescr)),vecX,&beta,vecY,
-			      CUSPARSE_BASE_TYPE,CUSPARSE_SPMV_ALG_DEFAULT,
-			      cMat->mvbuffer));
-  CHECK_CUSPARSE(cusparseDestroyDnVec(vecX) );
-  CHECK_CUSPARSE(cusparseDestroyDnVec(vecY) );
+  CHECK_CUSPARSE(cusparseSpMV(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                              &alpha, (*(cMat->spmvDescr)), vecX, &beta, vecY,
+                              CUSPARSE_BASE_TYPE, CUSPARSE_SPMV_ALG_DEFAULT,
+                              cMat->mvbuffer));
+  CHECK_CUSPARSE(cusparseDestroyDnVec(vecX));
+  CHECK_CUSPARSE(cusparseDestroyDnVec(vecY));
   CHECK_CUSPARSE(cusparseDestroySpMat(*(cMat->spmvDescr)));
 #endif
-  return(0);
+
+  return 0;
 }
 
-int T_spsvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX,
-		     TYPE beta, void *deviceY)
+static inline int T_spmmCSRGDevice_(T_Cmat *matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
+{
+  cusparseHandle_t *my_handle = getHandle();
+  T_CSRGDeviceMat *cMat = matrix->mat;
+  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
+  void *vX = x->v_;
+  void *vY = y->v_;
+  int nx = x->count_, ny = y->count_;
+  int ldx = x->pitch_, ldy = y->pitch_;
+  TYPE ealpha = alpha, ebeta = beta;
+
+#if PSB_CUDA_SHORT_VERSION <= 10
+  /* getAddrMultiVecDevice(deviceX, &vX); */
+  /* getAddrMultiVecDevice(deviceY, &vY); */
+
+  CHECK_CUSPARSE(cusparseTcsrmm(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, cMat->m, nx, cMat->n, cMat->nz, 
+                                (const TYPE *) &alpha, cMat->descr, cMat->val, cMat->irp, cMat->ja,
+                                (const TYPE *) vX, ldx, (const TYPE *) &beta, (TYPE *) vY, ldy));
+  
+#elif PSB_CUDA_VERSION < 11030
+  CHECK_CUSPARSE(cusparseCsrmmEx(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                  cMat->m, nx, cMat->n, cMat->nz,
+                                  (const void*) &ealpha, CUSPARSE_BASE_TYPE,
+                                  cMat->descr, (const void*) cMat->val, CUSPARSE_BASE_TYPE, (const int*) cMat->irp, (const int*) cMat->ja,
+                                  (const void*) vX, CUSPARSE_BASE_TYPE, ldx,
+                                  (const void*) &ebeta, CUSPARSE_BASE_TYPE,
+                                  (void*) vY, CUSPARSE_BASE_TYPE, ldy,
+                                  CUSPARSE_BASE_TYPE, CUSPARSE_ACTION_NUMERIC));
+#else
+  cusparseDnMatDescr_t vecX, vecY;
+  size_t bfsz;
+
+  if(T_CSRGIsNullMvDescr(cMat))
+    cMat->spmvDescr = (cusparseSpMatDescr_t  *) malloc(sizeof(cusparseSpMatDescr_t  *));
+
+  T_CSRGCreateSpMVDescr(cMat);
+
+  CHECK_CUSPARSE(cusparseCreateDnMat(&vecX, cMat->n, nx, ldx, vX, CUSPARSE_BASE_TYPE, CUSPARSE_ORDER_COL));
+  CHECK_CUSPARSE(cusparseCreateDnMat(&vecY, cMat->m, ny, ldy, vY, CUSPARSE_BASE_TYPE, CUSPARSE_ORDER_COL));
+  CHECK_CUSPARSE(cusparseSpMM_bufferSize(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                          &alpha, (*(cMat->spmvDescr)), vecX, &beta, vecY,
+                                          CUSPARSE_BASE_TYPE, CUSPARSE_SPMV_ALG_DEFAULT,
+                                          &bfsz));
+  if (bfsz > cMat->mvbsize) 
+  {
+    if (cMat->mvbuffer != NULL) 
+    {
+      CHECK_CUDA(cudaFree(cMat->mvbuffer));
+      cMat->mvbuffer = NULL;
+    }
+    allocRemoteBuffer((void **) &(cMat->mvbuffer), (size_t) bfsz);
+    cMat->mvbsize = bfsz;
+  }
+  CHECK_CUSPARSE(cusparseSpMM(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                              &alpha, (*(cMat->spmvDescr)), vecX, &beta, vecY,
+                              CUSPARSE_BASE_TYPE, CUSPARSE_SPMM_ALG_DEFAULT,
+                              cMat->mvbuffer));
+  CHECK_CUSPARSE(cusparseDestroyDnMat(vecX));
+  CHECK_CUSPARSE(cusparseDestroyDnMat(vecY));
+  CHECK_CUSPARSE(cusparseDestroySpMat(*(cMat->spmvDescr)));
+#endif
+
+  return 0;
+}
+
+//Temp one
+int T_spmvCSRGDevice(T_Cmat *matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
+{
+  return T_spmvCSRGDevice_(matrix, alpha, deviceX, 0, beta, deviceY, 0);
+}
+
+int T_spmvCSRGDeviceF(T_Cmat *matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
+{
+  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
+
+  if((x->count_ == 1) && (y->count_ == 1))
+    return T_spmvCSRGDevice_(matrix, alpha, deviceX, 0, beta, deviceY, 0);
+  else
+    return T_spmmCSRGDevice_(matrix, alpha, deviceX, beta, deviceY);
+}
+
+int T_spmvCSRGDeviceMV(T_Cmat *matrix, TYPE alpha, void *deviceX, int idxX, TYPE beta, void *deviceY)
+{
+  return T_spmvCSRGDevice_(matrix, alpha, deviceX, idxX, beta, deviceY, 0);
+}
+
+int T_spmvCSRGDeviceVM(T_Cmat *matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY, int idxY)
+{
+  return T_spmvCSRGDevice_(matrix, alpha, deviceX, 0, beta, deviceY, idxY);
+}
+
+int T_spmvCSRGDeviceMMi(T_Cmat *matrix, TYPE alpha, void *deviceX, int idxX, TYPE beta, void *deviceY, int idxY)
+{
+  return T_spmvCSRGDevice_(matrix, alpha, deviceX, idxX, beta, deviceY, idxY);
+}
+
+
+int T_spsvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
 {
   T_CSRGDeviceMat *cMat=Matrix->mat;
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
@@ -220,23 +315,24 @@ int T_spsvCSRGDevice(T_Cmat *Matrix, TYPE alpha, void *deviceX,
 }
 
 #if PSB_CUDA_VERSION >=  11030
-int T_CSRGCreateSpMVDescr(T_CSRGDeviceMat *cMat)
-{
-  int64_t tr,tc,tz;
-  tr = cMat->m;
-  tc = cMat->n;
-  tz = cMat->nz;
-  CHECK_CUSPARSE(cusparseCreateCsr(cMat->spmvDescr,
-				   tr,tc,tz,
-				   (void *) cMat->irp,
-				   (void *) cMat->ja,
-				   (void *) cMat->val,
-				   CUSPARSE_INDEX_32I,
-				   CUSPARSE_INDEX_32I,
-				   CUSPARSE_INDEX_BASE_ONE,
-				   CUSPARSE_BASE_TYPE) );
-}
+  int T_CSRGCreateSpMVDescr(T_CSRGDeviceMat *cMat)
+  {
+    int64_t tr,tc,tz;
+    tr = cMat->m;
+    tc = cMat->n;
+    tz = cMat->nz;
+    CHECK_CUSPARSE(cusparseCreateCsr(cMat->spmvDescr,
+            tr,tc,tz,
+            (void *) cMat->irp,
+            (void *) cMat->ja,
+            (void *) cMat->val,
+            CUSPARSE_INDEX_32I,
+            CUSPARSE_INDEX_32I,
+            CUSPARSE_INDEX_BASE_ONE,
+            CUSPARSE_BASE_TYPE) );
+  }
 #endif
+
 int T_CSRGDeviceAlloc(T_Cmat *Matrix,int nr, int nc, int nz)
 {
   T_CSRGDeviceMat *cMat;
@@ -369,48 +465,47 @@ int T_CSRGDeviceGetParms(T_Cmat *Matrix,int *nr, int *nc, int *nz)
   }
 }
 
-#if PSB_CUDA_SHORT_VERSION <= 10  
-
-int T_CSRGDeviceSetMatType(T_Cmat *Matrix, int type)
-{
-  T_CSRGDeviceMat *cMat= Matrix->mat;
-  return ((int) cusparseSetMatType(cMat->descr,type));
-}
-
-int T_CSRGDeviceSetMatFillMode(T_Cmat *Matrix, int type)
-{
-  T_CSRGDeviceMat *cMat= Matrix->mat;
-  return ((int) cusparseSetMatFillMode(cMat->descr,type));
-}
-
-int T_CSRGDeviceSetMatDiagType(T_Cmat *Matrix, int type)
-{
-  T_CSRGDeviceMat *cMat= Matrix->mat;
-  return ((int) cusparseSetMatDiagType(cMat->descr,type));
-}
-
-int T_CSRGDeviceSetMatIndexBase(T_Cmat *Matrix, int type)
-{
-  T_CSRGDeviceMat *cMat= Matrix->mat;
-  return ((int) cusparseSetMatIndexBase(cMat->descr,type));
-}
-
-int T_CSRGDeviceCsrsmAnalysis(T_Cmat *Matrix)
-{
-  T_CSRGDeviceMat *cMat= Matrix->mat;  
-  int rc, buffersize;
-  cusparseHandle_t *my_handle=getHandle();
-  cusparseSolveAnalysisInfo_t info;
-
-  rc= (int)  cusparseTcsrsv_analysis(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-				     cMat->m,cMat->nz,cMat->descr,
-				     cMat->val, cMat->irp, cMat->ja,
-				     cMat->triang);
-  if (rc !=0) {
-    fprintf(stderr,"From csrsv_analysis: %d\n",rc);
+#if PSB_CUDA_SHORT_VERSION <= 10
+  int T_CSRGDeviceSetMatType(T_Cmat *Matrix, int type)
+  {
+    T_CSRGDeviceMat *cMat= Matrix->mat;
+    return ((int) cusparseSetMatType(cMat->descr,type));
   }
-  return(rc);
-}
+
+  int T_CSRGDeviceSetMatFillMode(T_Cmat *Matrix, int type)
+  {
+    T_CSRGDeviceMat *cMat= Matrix->mat;
+    return ((int) cusparseSetMatFillMode(cMat->descr,type));
+  }
+
+  int T_CSRGDeviceSetMatDiagType(T_Cmat *Matrix, int type)
+  {
+    T_CSRGDeviceMat *cMat= Matrix->mat;
+    return ((int) cusparseSetMatDiagType(cMat->descr,type));
+  }
+
+  int T_CSRGDeviceSetMatIndexBase(T_Cmat *Matrix, int type)
+  {
+    T_CSRGDeviceMat *cMat= Matrix->mat;
+    return ((int) cusparseSetMatIndexBase(cMat->descr,type));
+  }
+
+  int T_CSRGDeviceCsrsmAnalysis(T_Cmat *Matrix)
+  {
+    T_CSRGDeviceMat *cMat= Matrix->mat;  
+    int rc, buffersize;
+    cusparseHandle_t *my_handle=getHandle();
+    cusparseSolveAnalysisInfo_t info;
+
+    rc= (int)  cusparseTcsrsv_analysis(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
+              cMat->m,cMat->nz,cMat->descr,
+              cMat->val, cMat->irp, cMat->ja,
+              cMat->triang);
+    if (rc !=0) {
+      fprintf(stderr,"From csrsv_analysis: %d\n",rc);
+    }
+    return(rc);
+  }
 
 #elif PSB_CUDA_VERSION <  11030
 int T_CSRGDeviceSetMatType(T_Cmat *Matrix, int type)
@@ -478,8 +573,7 @@ int T_CSRGIsNullSvDescr(T_CSRGDeviceMat *cMat)
 
 #endif
 
-int T_CSRGHost2Device(T_Cmat *Matrix, int m, int n, int nz,
-		      int *irp, int *ja, TYPE *val) 
+int T_CSRGHost2Device(T_Cmat *Matrix, int m, int n, int nz, int *irp, int *ja, TYPE *val) 
 {
   int rc;
   T_CSRGDeviceMat *cMat= Matrix->mat;
@@ -514,8 +608,7 @@ int T_CSRGHost2Device(T_Cmat *Matrix, int m, int n, int nz,
   return(CUSPARSE_STATUS_SUCCESS);
 }
 
-int T_CSRGDevice2Host(T_Cmat *Matrix, int m, int n, int nz,
-		      int *irp, int *ja, TYPE *val) 
+int T_CSRGDevice2Host(T_Cmat *Matrix, int m, int n, int nz, int *irp, int *ja, TYPE *val) 
 {
   int rc;
   T_CSRGDeviceMat *cMat = Matrix->mat;
@@ -538,203 +631,199 @@ int T_CSRGDevice2Host(T_Cmat *Matrix, int m, int n, int nz,
 }
 
 #if PSB_CUDA_SHORT_VERSION <= 10
-int T_HYBGDeviceFree(T_Hmat *Matrix)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  if (hMat != NULL) {
-    cusparseDestroyMatDescr(hMat->descr);
-    cusparseDestroySolveAnalysisInfo(hMat->triang);
-    cusparseDestroyHybMat(hMat->hybA);
-    free(hMat);
+  int T_HYBGDeviceFree(T_Hmat *Matrix)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    if (hMat != NULL) {
+      cusparseDestroyMatDescr(hMat->descr);
+      cusparseDestroySolveAnalysisInfo(hMat->triang);
+      cusparseDestroyHybMat(hMat->hybA);
+      free(hMat);
+    }
+    Matrix->mat = NULL;
+    return(CUSPARSE_STATUS_SUCCESS);
   }
-  Matrix->mat = NULL;
-  return(CUSPARSE_STATUS_SUCCESS);
-}
 
-int T_spmvHYBGDevice(T_Hmat *Matrix, TYPE alpha, void *deviceX,
-		     TYPE beta, void *deviceY)
-{
-  T_HYBGDeviceMat *hMat=Matrix->mat;
-  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
-  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
-  void *vX, *vY;
-  int r,n,rc;
-  cusparseMatrixType_t type;
-  cusparseHandle_t *my_handle=getHandle();
+  int T_spmvHYBGDevice(T_Hmat *Matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
+  {
+    T_HYBGDeviceMat *hMat=Matrix->mat;
+    struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+    struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
+    void *vX, *vY;
+    int r,n,rc;
+    cusparseMatrixType_t type;
+    cusparseHandle_t *my_handle=getHandle();
 
-  /*getAddrMultiVecDevice(deviceX, &vX);
-    getAddrMultiVecDevice(deviceY, &vY); */
-  vX=x->v_;
-  vY=y->v_;
+    /*getAddrMultiVecDevice(deviceX, &vX);
+      getAddrMultiVecDevice(deviceY, &vY); */
+    vX=x->v_;
+    vY=y->v_;
 
-  /* rc = (int) cusparseGetMatType(hMat->descr); */
-  /* fprintf(stderr,"Spmv MatType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
-  /* fprintf(stderr,"Spmv DiagType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
-  /* fprintf(stderr,"Spmv FillMode: %d\n",rc); */
-  /* Dirty trick: apparently hybmv does not accept a triangular
-     matrix even though it should not make a difference. So 
-     we claim it's general anyway */ 
-  type =  cusparseGetMatType(hMat->descr);
-  rc = cusparseSetMatType(hMat->descr,CUSPARSE_MATRIX_TYPE_GENERAL);
-  if (rc == 0) 
-    rc = (int) cusparseThybmv(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-			      (const TYPE *) &alpha, hMat->descr, hMat->hybA, 
-			      (const TYPE *) vX, (const TYPE *) &beta,
-			      (TYPE *) vY);
-  if (rc == 0) 
-    rc = cusparseSetMatType(hMat->descr,type);
-  return(rc);
-}
-
-int T_HYBGDeviceAlloc(T_Hmat *Matrix,int nr, int nc, int nz)
-{
-  T_HYBGDeviceMat *hMat;
-  int nr1=nr, nz1=nz, rc;
-  if ((nr<0)||(nc<0)||(nz<0)) 
-    return((int) CUSPARSE_STATUS_INVALID_VALUE);
-  if ((hMat=(T_HYBGDeviceMat *) malloc(sizeof(T_HYBGDeviceMat)))==NULL)
-    return((int) CUSPARSE_STATUS_ALLOC_FAILED);
-  hMat->m  = nr;
-  hMat->n  = nc;
-  hMat->nz = nz;
-
-  if ((rc= cusparseCreateMatDescr(&(hMat->descr))) !=0) 
+    /* rc = (int) cusparseGetMatType(hMat->descr); */
+    /* fprintf(stderr,"Spmv MatType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
+    /* fprintf(stderr,"Spmv DiagType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
+    /* fprintf(stderr,"Spmv FillMode: %d\n",rc); */
+    /* Dirty trick: apparently hybmv does not accept a triangular
+      matrix even though it should not make a difference. So 
+      we claim it's general anyway */ 
+    type =  cusparseGetMatType(hMat->descr);
+    rc = cusparseSetMatType(hMat->descr,CUSPARSE_MATRIX_TYPE_GENERAL);
+    if (rc == 0) 
+      rc = (int) cusparseThybmv(*my_handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+              (const TYPE *) &alpha, hMat->descr, hMat->hybA, 
+              (const TYPE *) vX, (const TYPE *) &beta,
+              (TYPE *) vY);
+    if (rc == 0) 
+      rc = cusparseSetMatType(hMat->descr,type);
     return(rc);
-  if ((rc= cusparseCreateSolveAnalysisInfo(&(hMat->triang))) !=0)
-    return(rc);
-  if((rc = cusparseCreateHybMat(&(hMat->hybA))) != 0)
-    return(rc);
-  Matrix->mat = hMat;
-  return(CUSPARSE_STATUS_SUCCESS);
-}
-
-int T_HYBGDeviceSetMatDiagType(T_Hmat *Matrix, int type)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  return ((int) cusparseSetMatDiagType(hMat->descr,type));
-}
-
-int T_HYBGDeviceSetMatIndexBase(T_Hmat *Matrix, int type)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  return ((int) cusparseSetMatIndexBase(hMat->descr,type));
-}
-
-int T_HYBGDeviceSetMatType(T_Hmat *Matrix, int type)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  return ((int) cusparseSetMatType(hMat->descr,type));
-}
-
-int T_HYBGDeviceSetMatFillMode(T_Hmat *Matrix, int type)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  return ((int) cusparseSetMatFillMode(hMat->descr,type));
-}
-
-int T_spsvHYBGDevice(T_Hmat *Matrix, TYPE alpha, void *deviceX,
-		     TYPE beta, void *deviceY)
-{
-  //beta??
-  T_HYBGDeviceMat *hMat=Matrix->mat;
-  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
-  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
-  void *vX, *vY;
-  int r,n;
-  cusparseHandle_t *my_handle=getHandle();
-  /*getAddrMultiVecDevice(deviceX, &vX);
-    getAddrMultiVecDevice(deviceY, &vY); */
-  vX=x->v_;
-  vY=y->v_;
-
-  return cusparseThybsv_solve(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-			      (const TYPE *) &alpha, hMat->descr,
-			      hMat->hybA, hMat->triang,
-			      (const TYPE *) vX,  (TYPE *) vY);
-}
-
-int T_HYBGDeviceHybsmAnalysis(T_Hmat *Matrix)
-{
-  T_HYBGDeviceMat *hMat= Matrix->mat;  
-  cusparseSolveAnalysisInfo_t info;
-  int rc;
-  cusparseHandle_t *my_handle=getHandle();
-
-  /* rc = (int) cusparseGetMatType(hMat->descr); */
-  /* fprintf(stderr,"Analysis MatType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
-  /* fprintf(stderr,"Analysis DiagType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
-  /* fprintf(stderr,"Analysis FillMode: %d\n",rc); */
-  rc = (int) cusparseThybsv_analysis(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
-				     hMat->descr, hMat->hybA, hMat->triang);
-
-  if (rc !=0) {
-    fprintf(stderr,"From csrsv_analysis: %d\n",rc);
   }
-  return(rc);
-}
 
-int T_HYBGHost2Device(T_Hmat *Matrix, int m, int n, int nz,
-		      int *irp, int *ja, TYPE *val) 
-{
-  int rc; double t1,t2;
-  int nr1=m, nz1=nz;
-  T_HYBGDeviceMat *hMat= Matrix->mat;
-  cusparseHandle_t *my_handle=getHandle();
+  int T_HYBGDeviceAlloc(T_Hmat *Matrix,int nr, int nc, int nz)
+  {
+    T_HYBGDeviceMat *hMat;
+    int nr1=nr, nz1=nz, rc;
+    if ((nr<0)||(nc<0)||(nz<0)) 
+      return((int) CUSPARSE_STATUS_INVALID_VALUE);
+    if ((hMat=(T_HYBGDeviceMat *) malloc(sizeof(T_HYBGDeviceMat)))==NULL)
+      return((int) CUSPARSE_STATUS_ALLOC_FAILED);
+    hMat->m  = nr;
+    hMat->n  = nc;
+    hMat->nz = nz;
 
-  if (nr1 == 0) nr1 = 1;
-  if (nz1 == 0) nz1 = 1;
-  if ((rc= allocRemoteBuffer(((void **) &(hMat->irp)),
-			     (((size_t) nr1+1)*sizeof(int)))) != 0)
-    return(rc);
-  if ((rc= allocRemoteBuffer(((void **) &(hMat->ja)),
-			     (((size_t) nz1)*sizeof(int)))) != 0)
-    return(rc);
-  if ((rc= allocRemoteBuffer(((void **) &(hMat->val)),
-			     (((size_t) nz1)*sizeof(TYPE)))) != 0)
-    return(rc);
-
-  if ((rc=writeRemoteBuffer((void *) irp, (void *) hMat->irp, 
-			    ((size_t) m+1)*sizeof(int)))
-      != SPGPU_SUCCESS) 
-    return(rc);
-  
-  if ((rc=writeRemoteBuffer((void *) ja,(void *) hMat->ja, 
-			    ((size_t) nz)*sizeof(int)))
-      != SPGPU_SUCCESS) 
-    return(rc);
-  if ((rc=writeRemoteBuffer((void *) val, (void *) hMat->val, 
-			    ((size_t) nz)*sizeof(TYPE)))
-      != SPGPU_SUCCESS) 
-    return(rc);
-  /* rc = (int) cusparseGetMatType(hMat->descr); */
-  /* fprintf(stderr,"Conversion MatType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
-  /* fprintf(stderr,"Conversion DiagType: %d\n",rc); */
-  /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
-  /* fprintf(stderr,"Conversion FillMode: %d\n",rc); */
-  //t1=etime();
-  rc = (int) cusparseTcsr2hyb(*my_handle, m, n,
-		   hMat->descr, 
-		   (const TYPE *)hMat->val,
-		   (const int *)hMat->irp, (const int *)hMat->ja, 
-		   hMat->hybA,0,
-		   CUSPARSE_HYB_PARTITION_AUTO);
-
-  freeRemoteBuffer(hMat->irp);  hMat->irp = NULL;
-  freeRemoteBuffer(hMat->ja);   hMat->ja  = NULL;
-  freeRemoteBuffer(hMat->val);  hMat->val = NULL;
-
-  //cudaSync();
-  //t2 = etime();
-  //fprintf(stderr,"Inner call to cusparseTcsr2hyb: %lf\n",(t2-t1));
-  if (rc != 0) {
-    fprintf(stderr,"From csr2hyb: %d\n",rc);
+    if ((rc= cusparseCreateMatDescr(&(hMat->descr))) !=0) 
+      return(rc);
+    if ((rc= cusparseCreateSolveAnalysisInfo(&(hMat->triang))) !=0)
+      return(rc);
+    if((rc = cusparseCreateHybMat(&(hMat->hybA))) != 0)
+      return(rc);
+    Matrix->mat = hMat;
+    return(CUSPARSE_STATUS_SUCCESS);
   }
-  return(rc);
-}
+
+  int T_HYBGDeviceSetMatDiagType(T_Hmat *Matrix, int type)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    return ((int) cusparseSetMatDiagType(hMat->descr,type));
+  }
+
+  int T_HYBGDeviceSetMatIndexBase(T_Hmat *Matrix, int type)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    return ((int) cusparseSetMatIndexBase(hMat->descr,type));
+  }
+
+  int T_HYBGDeviceSetMatType(T_Hmat *Matrix, int type)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    return ((int) cusparseSetMatType(hMat->descr,type));
+  }
+
+  int T_HYBGDeviceSetMatFillMode(T_Hmat *Matrix, int type)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    return ((int) cusparseSetMatFillMode(hMat->descr,type));
+  }
+
+  int T_spsvHYBGDevice(T_Hmat *Matrix, TYPE alpha, void *deviceX, TYPE beta, void *deviceY)
+  {
+    //beta??
+    T_HYBGDeviceMat *hMat=Matrix->mat;
+    struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+    struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
+    void *vX, *vY;
+    int r,n;
+    cusparseHandle_t *my_handle=getHandle();
+    /*getAddrMultiVecDevice(deviceX, &vX);
+      getAddrMultiVecDevice(deviceY, &vY); */
+    vX=x->v_;
+    vY=y->v_;
+
+    return cusparseThybsv_solve(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
+              (const TYPE *) &alpha, hMat->descr,
+              hMat->hybA, hMat->triang,
+              (const TYPE *) vX,  (TYPE *) vY);
+  }
+
+  int T_HYBGDeviceHybsmAnalysis(T_Hmat *Matrix)
+  {
+    T_HYBGDeviceMat *hMat= Matrix->mat;  
+    cusparseSolveAnalysisInfo_t info;
+    int rc;
+    cusparseHandle_t *my_handle=getHandle();
+
+    /* rc = (int) cusparseGetMatType(hMat->descr); */
+    /* fprintf(stderr,"Analysis MatType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
+    /* fprintf(stderr,"Analysis DiagType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
+    /* fprintf(stderr,"Analysis FillMode: %d\n",rc); */
+    rc = (int) cusparseThybsv_analysis(*my_handle,CUSPARSE_OPERATION_NON_TRANSPOSE,
+              hMat->descr, hMat->hybA, hMat->triang);
+
+    if (rc !=0) {
+      fprintf(stderr,"From csrsv_analysis: %d\n",rc);
+    }
+    return(rc);
+  }
+
+  int T_HYBGHost2Device(T_Hmat *Matrix, int m, int n, int nz, int *irp, int *ja, TYPE *val) 
+  {
+    int rc; double t1,t2;
+    int nr1=m, nz1=nz;
+    T_HYBGDeviceMat *hMat= Matrix->mat;
+    cusparseHandle_t *my_handle=getHandle();
+
+    if (nr1 == 0) nr1 = 1;
+    if (nz1 == 0) nz1 = 1;
+    if ((rc= allocRemoteBuffer(((void **) &(hMat->irp)),
+            (((size_t) nr1+1)*sizeof(int)))) != 0)
+      return(rc);
+    if ((rc= allocRemoteBuffer(((void **) &(hMat->ja)),
+            (((size_t) nz1)*sizeof(int)))) != 0)
+      return(rc);
+    if ((rc= allocRemoteBuffer(((void **) &(hMat->val)),
+            (((size_t) nz1)*sizeof(TYPE)))) != 0)
+      return(rc);
+
+    if ((rc=writeRemoteBuffer((void *) irp, (void *) hMat->irp, 
+            ((size_t) m+1)*sizeof(int)))
+        != SPGPU_SUCCESS) 
+      return(rc);
+    
+    if ((rc=writeRemoteBuffer((void *) ja,(void *) hMat->ja, 
+            ((size_t) nz)*sizeof(int)))
+        != SPGPU_SUCCESS) 
+      return(rc);
+    if ((rc=writeRemoteBuffer((void *) val, (void *) hMat->val, 
+            ((size_t) nz)*sizeof(TYPE)))
+        != SPGPU_SUCCESS) 
+      return(rc);
+    /* rc = (int) cusparseGetMatType(hMat->descr); */
+    /* fprintf(stderr,"Conversion MatType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatDiagType(hMat->descr); */
+    /* fprintf(stderr,"Conversion DiagType: %d\n",rc); */
+    /* rc = (int) cusparseGetMatFillMode(hMat->descr); */
+    /* fprintf(stderr,"Conversion FillMode: %d\n",rc); */
+    //t1=etime();
+    rc = (int) cusparseTcsr2hyb(*my_handle, m, n,
+        hMat->descr, 
+        (const TYPE *)hMat->val,
+        (const int *)hMat->irp, (const int *)hMat->ja, 
+        hMat->hybA,0,
+        CUSPARSE_HYB_PARTITION_AUTO);
+
+    freeRemoteBuffer(hMat->irp);  hMat->irp = NULL;
+    freeRemoteBuffer(hMat->ja);   hMat->ja  = NULL;
+    freeRemoteBuffer(hMat->val);  hMat->val = NULL;
+
+    //cudaSync();
+    //t2 = etime();
+    //fprintf(stderr,"Inner call to cusparseTcsr2hyb: %lf\n",(t2-t1));
+    if (rc != 0) {
+      fprintf(stderr,"From csr2hyb: %d\n",rc);
+    }
+    return(rc);
+  }
 #endif
-

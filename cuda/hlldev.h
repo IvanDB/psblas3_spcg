@@ -68,8 +68,7 @@ typedef struct hlldevice
 } HllDevice;
 
 typedef struct hlldeviceparams
-{			
-  
+{
   unsigned int elementType;
 
   unsigned int hackSize;
@@ -93,27 +92,30 @@ typedef struct hlldeviceparams
 } HllDeviceParams;
 
 
-HllDeviceParams bldHllDeviceParams(unsigned int hksize, unsigned int rows, unsigned int nzeros,
-				   unsigned int allocsize, 
-				   unsigned int elementType, unsigned int firstIndex);
-int getHllDeviceParams(HllDevice* mat, int *hksize, int *rows, int *nzeros,
-		       int *allocsize, int *hackOffsLength,  int *firstIndex, int *avgnzr);
-int FallocHllDevice(void** deviceMat,unsigned int hksize, unsigned int rows,  unsigned int nzeros,
-		    unsigned int allocsize, unsigned int elementType, unsigned int firstIndex);
-int allocHllDevice(void ** remoteMatrix, HllDeviceParams* params);
+HllDeviceParams bldHllDeviceParams(unsigned int hksize, unsigned int rows, unsigned int nzeros, unsigned int allocsize, unsigned int elementType, unsigned int firstIndex);
+int getHllDeviceParams(HllDevice* mat, int *hksize, int *rows, int *nzeros, int *allocsize, int *hackOffsLength,  int *firstIndex, int *avgnzr);
+
+int FallocHllDevice(void** deviceMat,unsigned int hksize, unsigned int rows,  unsigned int nzeros, unsigned int allocsize, unsigned int elementType, unsigned int firstIndex);
+int allocHllDevice(void** remoteMatrix, HllDeviceParams* params);
 void freeHllDevice(void* remoteMatrix);
+
+
+int spmvHllDeviceFloat(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY);
+
+int spmvHllDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY);
+int spmvHllDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY, int idxY);
+int spmvHllDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY);
+int spmvHllDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY, int idxY);
+
 int writeHllDeviceFloat(void* deviceMat, float* val, int* ja, int *hkoffs, int* irn, int *idiag);
 int writeHllDeviceDouble(void* deviceMat, double* val, int* ja, int *hkoffs, int* irn, int *idiag);
-int writeHllDeviceFloatComplex(void* deviceMat, float complex* val, 
-			       int* ja, int *hkoffs, int* irn, int *idiag);
-int writeHllDeviceDoubleComplex(void* deviceMat, double complex* val, 
-				int* ja, int *hkoffs, int* irn, int *idiag);
+int writeHllDeviceFloatComplex(void* deviceMat, float complex* val, int* ja, int *hkoffs, int* irn, int *idiag);
+int writeHllDeviceDoubleComplex(void* deviceMat, double complex* val, int* ja, int *hkoffs, int* irn, int *idiag);
+
 int readHllDeviceFloat(void* deviceMat, float* val, int* ja, int *hkoffs, int* irn, int *idiag);
 int readHllDeviceDouble(void* deviceMat, double* val, int* ja, int *hkoffs, int* irn, int *idiag);
-int readHllDeviceFloatComplex(void* deviceMat, float complex* val,
-			      int* ja, int *hkoffs, int* irn, int *idiag);
-int readHllDeviceDoubleComplex(void* deviceMat, double complex* val, 
-			       int* ja, int *hkoffs, int* irn, int *idiag);
+int readHllDeviceFloatComplex(void* deviceMat, float complex* val, int* ja, int *hkoffs, int* irn, int *idiag);
+int readHllDeviceDoubleComplex(void* deviceMat, double complex* val, int* ja, int *hkoffs, int* irn, int *idiag);
 
 
 int psiCopyCooToHlgFloat(int nr, int nc, int nza, int hacksz, int noffs, int isz,
@@ -151,6 +153,4 @@ int psi_cuda_z_CopyCooToHlg(spgpuHandle_t handle,int nr, int nc, int nza,
 			    int *irn, int *hoffs,  int *idisp,
 			    int *ja, double complex *val,
 			    int *idiag, int *rP, double complex *cM);
-
-
 #endif

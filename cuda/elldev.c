@@ -200,33 +200,25 @@ int spmvEllDeviceFloat(void *deviceMat, float alpha, void* deviceX,
 }
 
 
-void
-dspmdmm_gpu (double *z,int s, int vPitch, double *y, double alpha, double* cM, int* rP,
-	     int* rS, int avgRowSize, int maxRowSize, int rows, int pitch, 
-	     double *x, double beta, int firstIndex)
+void dspmdmm_gpu (double *z, int s, int vPitch, double *y, double alpha, double* cM, int* rP,
+                  int* rS, int avgRowSize, int maxRowSize, int rows, int pitch, 
+                  double *x, double beta, int firstIndex)
 {
-  int i=0;
-  spgpuHandle_t handle=psb_cudaGetHandle();
-  for (i=0; i<s; i++)
-    {
-      if (PASS_RS) {
-	spgpuDellspmv (handle, (double*) z, (double*)y, alpha, (double*) cM, rP,
-		       pitch, pitch, rS,
-		       NULL,  avgRowSize, maxRowSize, rows, (double*)x, beta, firstIndex);
-      } else {
-	spgpuDellspmv (handle, (double*) z, (double*)y, alpha, (double*) cM, rP,
-		       pitch, pitch, NULL,
-		       NULL,  avgRowSize, maxRowSize, rows, (double*)x, beta, firstIndex);
-      } 
-      z += vPitch;
-      y += vPitch;
-      x += vPitch;		
-    }
+  spgpuHandle_t handle = psb_cudaGetHandle();
+  int* m_rS = (PASS_RS) ? rS : NULL;
+
+  for (int i = 0; i < s; ++i)
+  {
+    spgpuDellspmv(handle, (double*) z, (double*) y, alpha, (double*) cM, rP, pitch, pitch, m_rS, NULL, avgRowSize, maxRowSize, rows, (double*) x, beta, firstIndex);
+
+    z += vPitch;
+    y += vPitch;
+    x += vPitch;		
+  }
 }
 
 //new
-int spmvEllDeviceDouble(void *deviceMat, double alpha, void* deviceX, 
-		       double beta, void* deviceY)
+int spmvEllDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY)
 {
   struct EllDevice *devMat = (struct EllDevice *) deviceMat;
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
@@ -236,14 +228,54 @@ int spmvEllDeviceDouble(void *deviceMat, double alpha, void* deviceX,
   /* fprintf(stderr,"From spmvEllDouble: mat %d %d %d %d y %d %d \n", */
   /* 	  devMat->avgRowSize, devMat->maxRowSize, devMat->rows, */
   /* 	  devMat->pitch, y->count_, y->pitch_); */
-  dspmdmm_gpu ((double *)y->v_, y->count_, y->pitch_, (double *)y->v_,
-	       alpha, (double *)devMat->cM, 
-	       devMat->rP, devMat->rS, devMat->avgRowSize,
-	       devMat->maxRowSize, devMat->rows, devMat->pitch,
-	       (double *)x->v_, beta, devMat->baseIndex);
+
+  dspmdmm_gpu((double*) y->v_, y->count_, y->pitch_, (double*) y->v_, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, (double*) x->v_, beta, devMat->baseIndex);
   
   return SPGPU_SUCCESS;
 }
+
+int spmvEllDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY, int idxY)
+{
+  struct EllDevice *devMat = (struct EllDevice *) deviceMat;
+  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
+
+  double* xColAdd = (double*) x->v_;
+  double* yColAdd = ((double*) x->v_) + (idxY * y->pitch_);
+
+  dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
+
+  return SPGPU_SUCCESS;
+}
+
+int spmvEllDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY)
+{
+  struct EllDevice *devMat = (struct EllDevice *) deviceMat;
+  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
+
+  double* xColAdd = ((double*) x->v_) + (idxX * x->pitch_);
+  double* yColAdd = (double*) x->v_;
+
+  dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
+
+  return SPGPU_SUCCESS;
+}
+
+int spmvEllDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY, int idxY)
+{
+  struct EllDevice *devMat = (struct EllDevice *) deviceMat;
+  struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
+  struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
+
+  double* xColAdd = ((double*) x->v_) + (idxX * x->pitch_);
+  double* yColAdd = ((double*) x->v_) + (idxY * y->pitch_);
+
+  dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
+
+  return SPGPU_SUCCESS;
+}
+
 
 void
 cspmdmm_gpu (cuFloatComplex *z, int s, int vPitch, cuFloatComplex *y,  

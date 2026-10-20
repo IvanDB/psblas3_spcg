@@ -97,11 +97,8 @@ typedef struct EllDeviceParams
 } EllDeviceParams;
 
 int computeEllAllocPitch(int rowsCount);
-int FallocEllDevice(void** deviceMat, unsigned int rows, unsigned int maxRowSize, 
-		    unsigned int nnzeros,
-		    unsigned int columns, unsigned int elementType, 
-		    unsigned int firstIndex);
-int allocEllDevice(void ** remoteMatrix, EllDeviceParams* params);
+int FallocEllDevice(void** deviceMat, unsigned int rows, unsigned int maxRowSize, unsigned int nnzeros, unsigned int columns, unsigned int elementType, unsigned int firstIndex);
+int allocEllDevice(void** remoteMatrix, EllDeviceParams* params);
 void freeEllDevice(void* remoteMatrix);
 
 int writeEllDeviceFloat(void* deviceMat, float* val, int* ja, int ldj, int* irn, int *idiag);
@@ -114,28 +111,23 @@ int readEllDeviceDouble(void* deviceMat, double* val, int* ja, int ldj, int* irn
 int readEllDeviceFloatComplex(void* deviceMat, float complex* val, int* ja, int ldj, int* irn, int *idiag);
 int readEllDeviceDoubleComplex(void* deviceMat, double complex* val, int* ja, int ldj, int* irn, int *idiag);
 
-int spmvEllDeviceFloat(void *deviceMat, float alpha, void* deviceX, 
-		       float beta, void* deviceY);
-int spmvEllDeviceDouble(void *deviceMat, double alpha, void* deviceX, 
-			double beta, void* deviceY);
-int spmvEllDeviceFloatComplex(void *deviceMat, float complex alpha, void* deviceX,
-			      float complex beta, void* deviceY);
-int spmvEllDeviceDoubleComplex(void *deviceMat, double complex alpha, void* deviceX,
-			       double complex beta, void* deviceY);
+
+int spmvEllDeviceFloat(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY);
+
+int spmvEllDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY);
+int spmvEllDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY, int idxY);
+int spmvEllDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY);
+int spmvEllDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY, int idxY);
+
+int spmvEllDeviceFloatComplex(void *deviceMat, float complex alpha, void* deviceX, float complex beta, void* deviceY);
+
+int spmvEllDeviceDoubleComplex(void *deviceMat, double complex alpha, void* deviceX, double complex beta, void* deviceY);
 
 
-
-int psiCopyCooToElgFloat(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn,
-			  int *idisp, int *ja, float *val, void *deviceMat);
-
-int psiCopyCooToElgDouble(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn,
-			  int *idisp, int *ja, double *val, void *deviceMat);
-
-int psiCopyCooToElgFloatComplex(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn,
-			  int *idisp, int *ja, float complex *val, void *deviceMat);
-
-int psiCopyCooToElgDoubleComplex(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn,
-			  int *idisp, int *ja, double complex *val, void *deviceMat);
+int psiCopyCooToElgFloat(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn, int *idisp, int *ja, float *val, void *deviceMat);
+int psiCopyCooToElgDouble(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn, int *idisp, int *ja, double *val, void *deviceMat);
+int psiCopyCooToElgFloatComplex(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn, int *idisp, int *ja, float complex *val, void *deviceMat);
+int psiCopyCooToElgDoubleComplex(int nr, int nc, int nza, int hacksz, int ldv, int nzm, int *irn, int *idisp, int *ja, double complex *val, void *deviceMat);
 
 
 void psi_cuda_s_CopyCooToElg(spgpuHandle_t handle, int nr, int nc, int nza, int baseIdx,
@@ -159,17 +151,12 @@ void psi_cuda_z_CopyCooToElg(spgpuHandle_t handle, int nr, int nc, int nza, int 
 			     int *idiag, int *rP, double complex *cM);
 
 
-int dev_csputEllDeviceFloat(void* deviceMat, int nnz,
-			    void *ia, void *ja, void *val);
-int dev_csputEllDeviceDouble(void* deviceMat, int nnz,
-			     void *ia, void *ja, void *val);
-int dev_csputEllDeviceFloatComplex(void* deviceMat,  int nnz,
-				   void *ia, void *ja, void *val);
-int dev_csputEllDeviceDoubleComplex(void* deviceMat, int nnz,
-				    void *ia, void *ja, void *val);
+int dev_csputEllDeviceFloat(void* deviceMat, int nnz, void *ia, void *ja, void *val);
+int dev_csputEllDeviceDouble(void* deviceMat, int nnz, void *ia, void *ja, void *val);
+int dev_csputEllDeviceFloatComplex(void* deviceMat, int nnz, void *ia, void *ja, void *val);
+int dev_csputEllDeviceDoubleComplex(void* deviceMat, int nnz, void *ia, void *ja, void *val);
 
 void zeroEllDevice(void* deviceMat);
-
 int getEllDevicePitch(void* deviceMat);
 
 // sparse Ell matrix-vector product

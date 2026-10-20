@@ -81,6 +81,44 @@ spgpuDhdiaspmv (spgpuHandle_t handle,
 	const double *x, 
 	double beta);
 
+	
+/** 
+* \fn spgpuDhdiaspmm (int count, double *z, int zpitch, const double *y, int ypitch, double alpha, const __device double* dM, const __device int* offsets, int hackSize, const __device int* hackOffsets, int rows, int cols, const __device float *x, int xpitch, double beta)
+ * Computes single precision z = alpha*A*x + beta*y, with A stored in Hacked Diagonal Format on GPU.
+ * \param handle The spgpu handle used to call this routine
+ * \param count The cols count
+ * \param z The output vector of the routine. z could be y, but not y + k (i.e. an overlapping area over y, but starting from a base index different from y).
+ * \param zpitch The pitch of the output vector
+ * \param y The y input vector
+ * \param ypitch The pitch of the y input vector
+ * \param alpha The alpha scalar
+ * \param dM The stacked HDIA non zero values allocation pointer
+ * \param offsets The stacked HDIA diagonals offsets vector
+ * \param hackSize The constant size of every hack (must be a multiple of 32) 
+ * \param hackOffsets the array of base index offset for every hack of HDIA offsets vector, plus a last value equal to the size of the offsets vector
+ * \param rows the rows count
+ * \param cols the columns count
+ * \param x the x vector
+ * \param xpitch The pitch of the x input vector
+ * \param beta the beta scalar
+ */
+void 
+spgpuDhdiaspmm (spgpuHandle_t handle, 
+	int count,
+	__device double *z,
+	int zpitch,
+	const __device double *y,
+	int ypitch,
+	double alpha, 
+	const __device double* dM, 
+	const __device int* offsets, 
+	int hackSize, 
+	const __device int* hackOffsets,
+	int rows,
+	int cols, 
+	const __device double *x, 
+	int xpitch,
+	double beta);
 
 /** 
 * \fn spgpuChdiaspmv (spgpuHandle_t handle, cuFloatComplex* z, const cuFloatComplex *y, cuFloatComplex alpha, const cuFloatComplex* dM, const int* offsets, int hackSize, const int* hackOffsets, int rows, int cols, const cuFloatComplex *x, cuFloatComplex beta)

@@ -31,6 +31,8 @@
 
 #include "psb_config.h"
 #include "psb_types.h"
+#include <stddef.h>
+#include "cuda_runtime.h"
 #include "driver_types.h"
 #include "cuComplex.h"
 #include <stdbool.h>
