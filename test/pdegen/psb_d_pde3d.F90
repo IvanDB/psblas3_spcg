@@ -792,7 +792,7 @@ program psb_d_pde3d
   !
   call psb_barrier(ctxt)
   t1 = psb_wtime()
-  call psb_gen_pde3d(ctxt,idim,a,bv,xxv,desc_a,afmt,info,partition=ipart)
+  call psb_gen_pde3d(ctxt,idim,a,bv,xxv,desc_a,afmt,info,partition=ipart, vmold=vmold, amold=amold, imold=imold)
   call psb_barrier(ctxt)
   t2 = psb_wtime() - t1
   if(info /= psb_success_) then
