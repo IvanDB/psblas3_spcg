@@ -203,7 +203,7 @@ int spmvDiagDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double 
 #endif
 
   double* xColAdd = (double *) x->v_;
-  double* yColAdd = ((double *) y->v_) + (idxY * y->pitch_);
+  double* yColAdd = ((double *) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDdiaspmv(handle, yColAdd, yColAdd, alpha, (double *)devMat->cM, devMat->off, devMat->rows, devMat->rows, devMat->cols, devMat->diags, xColAdd, beta);
   //cudaSync();
 
@@ -223,7 +223,7 @@ int spmvDiagDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idx
   /*__assert(y->size_ >= devMat->rows, "ERROR: y vector's size is not >= to matrix size (rows)");*/
 #endif
 
-  double* xColAdd = ((double *) x->v_) + (idxX * x->pitch_);
+  double* xColAdd = ((double *) x->v_) + (IDX_F2C(idxX) * x->pitch_);
   double* yColAdd = (double *) y->v_;
   spgpuDdiaspmv(handle, yColAdd, yColAdd, alpha, (double *)devMat->cM, devMat->off, devMat->rows, devMat->rows, devMat->cols, devMat->diags, xColAdd, beta);
   //cudaSync();
@@ -244,8 +244,8 @@ int spmvDiagDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int id
   /*__assert(y->size_ >= devMat->rows, "ERROR: y vector's size is not >= to matrix size (rows)");*/
 #endif
 
-  double* xColAdd = ((double *) x->v_) + (idxX * x->pitch_);
-  double* yColAdd = ((double *) y->v_) + (idxY * y->pitch_);
+  double* xColAdd = ((double *) x->v_) + (IDX_F2C(idxX) * x->pitch_);
+  double* yColAdd = ((double *) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDdiaspmv(handle, yColAdd, yColAdd, alpha, (double *)devMat->cM, devMat->off, devMat->rows, devMat->rows, devMat->cols, devMat->diags, xColAdd, beta);
   //cudaSync();
   

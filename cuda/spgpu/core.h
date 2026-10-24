@@ -38,9 +38,10 @@
 #include <stdbool.h>
 
 #include "ISO_Fortran_binding.h"
-//typedef unsigned char byte;
 #define CFI_AT1(T, d, i) 	(*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm))
 #define CFI_AT2(T, d, i, j) (*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm + (size_t)(j) * (d)->dim[1].sm))
+
+#define IDX_F2C(fIdx) ((size_t) (fIdx) - 1)
 
 /** \addtogroup coreFun Core Routines
  *  @{

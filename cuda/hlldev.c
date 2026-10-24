@@ -237,7 +237,7 @@ int spmvHllDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double b
 #endif
 
   double* xColAdd = (double *) x->v_;
-  double* yColAdd = ((double *) y->v_) + (idxY * y->pitch_);
+  double* yColAdd = ((double *) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDhellspmv(handle, yColAdd, yColAdd, alpha, (double*)devMat->cM, 
                 devMat->rP, devMat->hackSize, devMat->hackOffs, devMat->rS, NULL,
                 devMat->avgNzr, devMat->rows, xColAdd, beta, devMat->baseIndex);
@@ -259,7 +259,7 @@ int spmvHllDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX
   /*__assert(y->size_ >= devMat->rows, "ERROR: y vector's size is not >= to matrix size (rows)");*/
 #endif
 
-  double* xColAdd = ((double *) x->v_) + (idxX * x->pitch_);
+  double* xColAdd = ((double *) x->v_) + (IDX_F2C(idxX) * x->pitch_);
   double* yColAdd = (double *) y->v_;
   spgpuDhellspmv(handle, yColAdd, yColAdd, alpha, (double*)devMat->cM, 
                 devMat->rP, devMat->hackSize, devMat->hackOffs, devMat->rS, NULL,
@@ -282,8 +282,8 @@ int spmvHllDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idx
   /*__assert(y->size_ >= devMat->rows, "ERROR: y vector's size is not >= to matrix size (rows)");*/
 #endif
 
-  double* xColAdd = ((double *) x->v_) + (idxX * x->pitch_);
-  double* yColAdd = ((double *) y->v_) + (idxY * y->pitch_);
+  double* xColAdd = ((double *) x->v_) + (IDX_F2C(idxX) * x->pitch_);
+  double* yColAdd = ((double *) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDhellspmv(handle, yColAdd, yColAdd, alpha, (double*)devMat->cM, 
                 devMat->rP, devMat->hackSize, devMat->hackOffs, devMat->rS, NULL,
                 devMat->avgNzr, devMat->rows, xColAdd, beta, devMat->baseIndex);

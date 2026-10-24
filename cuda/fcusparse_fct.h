@@ -35,8 +35,8 @@ static inline int T_spmvCSRGDevice_(T_Cmat *matrix, TYPE alpha, void *deviceX, i
   T_CSRGDeviceMat *cMat = matrix->mat;
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
   struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY; 
-  void *vX = (void*) (((TYPE *) x->v_) + (idxX * x->pitch_));
-  void *vY = (void*) (((TYPE *) y->v_) + (idxY * y->pitch_));
+  void *vX = (void*) (((TYPE *) x->v_) + (IDX_F2C(idxX) * x->pitch_));
+  void *vY = (void*) (((TYPE *) y->v_) + (IDX_F2C(idxY) * y->pitch_));
   TYPE ealpha = alpha, ebeta = beta;
 
 #if PSB_CUDA_SHORT_VERSION <= 10

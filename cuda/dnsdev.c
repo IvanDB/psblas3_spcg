@@ -170,7 +170,7 @@ int spmvDnsDeviceDoubleMV(char transa, int m, int n, int k, double *alpha, void 
   if(n != 1) return SPGPU_UNSUPPORTED;
 
   void* xColAdd = x->v_;
-  void* yColAdd = (void*) (((double*) y->v_) + (idxY * y->pitch_));
+  void* yColAdd = (void*) (((double*) y->v_) + (IDX_F2C(idxY) * y->pitch_));
   int status = cublasDgemv(handle, trans, m, k, alpha, devMat->cM, devMat->pitch, xColAdd, 1, beta, yColAdd, 1);
   
   return (status == CUBLAS_STATUS_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSUPPORTED;
@@ -188,7 +188,7 @@ int spmvDnsDeviceDoubleVM(char transa, int m, int n, int k, double *alpha, void 
   /* Note: the M, N, K choices according to TRANS have already been handled in the caller */  
   if(n != 1) return SPGPU_UNSUPPORTED;
 
-  void* xColAdd = (void*) (((double*) x->v_) + (idxX * x->pitch_));
+  void* xColAdd = (void*) (((double*) x->v_) + (IDX_F2C(idxX) * x->pitch_));
   void* yColAdd = y->v_;
   int status = cublasDgemv(handle, trans, m, k, alpha, devMat->cM, devMat->pitch, xColAdd, 1, beta, yColAdd, 1);
   
@@ -207,8 +207,8 @@ int spmvDnsDeviceDoubleMMi(char transa, int m, int n, int k, double *alpha, void
   /* Note: the M, N, K choices according to TRANS have already been handled in the caller */  
   if(n != 1) return SPGPU_UNSUPPORTED;
 
-  void* xColAdd = (void*) (((double*) x->v_) + (idxX * x->pitch_));
-  void* yColAdd = (void*) (((double*) y->v_) + (idxY * y->pitch_));
+  void* xColAdd = (void*) (((double*) x->v_) + (IDX_F2C(idxX) * x->pitch_));
+  void* yColAdd = (void*) (((double*) y->v_) + (IDX_F2C(idxY) * y->pitch_));
   int status = cublasDgemv(handle, trans, m, k, alpha, devMat->cM, devMat->pitch, xColAdd, 1, beta, yColAdd, 1);
   
   return (status == CUBLAS_STATUS_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSUPPORTED;

@@ -241,7 +241,7 @@ int spmvEllDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double b
   struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
 
   double* xColAdd = (double*) x->v_;
-  double* yColAdd = ((double*) x->v_) + (idxY * y->pitch_);
+  double* yColAdd = ((double*) x->v_) + (IDX_F2C(idxY) * y->pitch_);
 
   dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
 
@@ -254,7 +254,7 @@ int spmvEllDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
   struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
 
-  double* xColAdd = ((double*) x->v_) + (idxX * x->pitch_);
+  double* xColAdd = ((double*) x->v_) + (IDX_F2C(idxX) * x->pitch_);
   double* yColAdd = (double*) x->v_;
 
   dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
@@ -268,8 +268,8 @@ int spmvEllDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idx
   struct MultiVectDevice *x = (struct MultiVectDevice *) deviceX;
   struct MultiVectDevice *y = (struct MultiVectDevice *) deviceY;
 
-  double* xColAdd = ((double*) x->v_) + (idxX * x->pitch_);
-  double* yColAdd = ((double*) x->v_) + (idxY * y->pitch_);
+  double* xColAdd = ((double*) x->v_) + (IDX_F2C(idxX) * x->pitch_);
+  double* yColAdd = ((double*) x->v_) + (IDX_F2C(idxY) * y->pitch_);
 
   dspmdmm_gpu(yColAdd, 1, y->pitch_, yColAdd, alpha, (double*) devMat->cM, devMat->rP, devMat->rS, devMat->avgRowSize, devMat->maxRowSize, devMat->rows, devMat->pitch, xColAdd, beta, devMat->baseIndex);
 

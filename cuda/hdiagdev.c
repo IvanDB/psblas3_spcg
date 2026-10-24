@@ -384,8 +384,7 @@ int spmvHdiagDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double 
   if((x->count_ == 1) && (x->count_ == 1))
     spgpuDhdiaspmv(handle, (double*) y->v_, (double*) y->v_, alpha, (double*) devMat->cM, devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows, devMat->cols, x->v_, beta);
   else
-    spgpuDhdiaspmm(handle, x->count_, (double*) y->v_, y->pitch_, (double*) y->v_, y->pitch_, alpha, (double*) devMat->cM, 
-                    devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows,devMat->cols, x->v_, x->pitch_, beta);
+    spgpuDhdiaspmm(handle, x->count_, (double*) y->v_, y->pitch_, (double*) y->v_, y->pitch_, alpha, (double*) devMat->cM, devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows,devMat->cols, x->v_, x->pitch_, beta);
   
   //cudaSync();
   return SPGPU_SUCCESS;
@@ -411,7 +410,7 @@ int spmvHdiagDeviceDoubleMV(void *deviceMat, double alpha, void *deviceX, double
 #endif
   
   double* xColAdd = (double*) x->v_;
-  double* yColAdd = ((double*) y->v_) + (idxY * y->pitch_);
+  double* yColAdd = ((double*) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDhdiaspmv(handle, yColAdd, yColAdd, alpha, (double*) devMat->cM, devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows,devMat->cols, xColAdd, beta);
   
   //cudaSync();
@@ -437,7 +436,7 @@ int spmvHdiagDeviceDoubleVM(void *deviceMat, double alpha, void *deviceX, int id
 	  devMat->hackOffsets, devMat->hdiaOffsets, devMat->cM);
 #endif
   
-  double* xColAdd = ((double*) x->v_) + (idxX * y->pitch_);
+  double* xColAdd = ((double*) x->v_) + (IDX_F2C(idxX) * y->pitch_);
   double* yColAdd = (double*) y->v_;
   spgpuDhdiaspmv(handle, yColAdd, yColAdd, alpha, (double*) devMat->cM, devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows,devMat->cols, xColAdd, beta);
   
@@ -464,8 +463,8 @@ int spmvHdiagDeviceDoubleMMi(void *deviceMat, double alpha, void *deviceX, int i
 	  devMat->hackOffsets, devMat->hdiaOffsets, devMat->cM);
 #endif
   
-  double* xColAdd = ((double*) x->v_) + (idxX * y->pitch_);
-  double* yColAdd = ((double*) y->v_) + (idxY * y->pitch_);
+  double* xColAdd = ((double*) x->v_) + (IDX_F2C(idxX) * y->pitch_);
+  double* yColAdd = ((double*) y->v_) + (IDX_F2C(idxY) * y->pitch_);
   spgpuDhdiaspmv(handle, yColAdd, yColAdd, alpha, (double*) devMat->cM, devMat->hdiaOffsets, devMat->hackSize, devMat->hackOffsets, devMat->rows,devMat->cols, xColAdd, beta);
   
   //cudaSync();
