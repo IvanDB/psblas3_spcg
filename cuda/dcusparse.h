@@ -44,7 +44,13 @@
 #define CUSPARSE_BASE_TYPE             CUDA_R_64F
 #define T_CSRGDeviceMat		       d_CSRGDeviceMat
 #define T_Cmat			       d_Cmat
-#define T_spmvCSRGDevice	       d_spmvCSRGDevice
+
+// #define T_spmvCSRGDevice	       d_spmvCSRGDevice
+#define T_spmvCSRGDeviceF	       d_spmvCSRGDeviceF
+#define T_spmvCSRGDeviceMV       d_spmvCSRGDeviceMV
+#define T_spmvCSRGDeviceVM       d_spmvCSRGDeviceVM
+#define T_spmvCSRGDeviceMMi      d_spmvCSRGDeviceMMi
+
 #define T_spsvCSRGDevice	       d_spsvCSRGDevice
 #define T_CSRGDeviceAlloc	       d_CSRGDeviceAlloc
 #define T_CSRGDeviceFree	       d_CSRGDeviceFree
