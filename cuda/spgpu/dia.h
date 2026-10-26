@@ -84,6 +84,42 @@ void spgpuDdiaspmv (spgpuHandle_t handle,
 	const __device double *x, 
 	double beta);
 
+/** 
+* \fn void spgpuDdiaspmm (spgpuHandle_t handle,__device double *z, int ldz, const __device double *y, int ldy, double alpha, const __device double* dM, const __device int* offsets, int dMPitch, int rows, int cols, int diags, const __device double *x, int ldx, int mvectCount, double beta)
+ * Computes double precision z = alpha*A*x + beta*y, with A stored in Diagonal Format on GPU.
+ * \param handle The spgpu handle used to call this routine
+ * \param z The output multivector of the routine. z could be y, but not y + k (i.e. an overlapping area over y, but starting from a base index different from y).
+ * \param ldz The z pitch
+ * \param y The y input multivector
+ * \param ldy The y pitch
+ * \param alpha The alpha scalar
+ * \param dM The DIA non zero values allocation pointer (stored column-major)
+ * \param offsets The DIA diagonals offsets vector
+ * \param dMPitch the pitch (in number of elements) of the allocation containing the matrix non zero values
+ * \param rows the rows count
+ * \param cols the columns count
+ * \param diags the diagonals count
+ * \param x the x multivector
+ * \param ldx the x pitch
+ * \param mvectCount the number of column in x, y and z (must be equals)
+ * \param beta the beta scalar
+ */
+void spgpuDdiaspmm (spgpuHandle_t handle,
+	__device double *z,
+	int ldz,
+	const __device double *y, 
+	int ldy,
+	double alpha, 
+	const __device double* dM,
+	const __device int* offsets,
+	int dMPitch,
+	int rows, 
+	int cols,
+	int diags,
+	const __device double *x, 
+	int ldx,
+	double beta,
+	int mvectCount);
 
 /** 
 * \fn void spgpuCdiaspmv (spgpuHandle_t handle,__device cuFloatComplex *z,const __device cuFloatComplex *y, cuFloatComplex alpha, const __device cuFloatComplex* dM, const __device int* offsets, int dMPitch, int rows, int cols, int diags, const __device cuFloatComplex *x, cuFloatComplex beta)

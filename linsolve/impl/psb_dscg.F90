@@ -6,6 +6,10 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   use psb_d_linsolve_conv_mod
   use psb_linsolve_mod
   use psb_pMPK_mod
+#if defined(PSB_HAVE_CUDA)
+  use psb_cuda_mod
+#endif
+
   implicit none
   type(psb_dspmat_type), intent(in)     :: a
   class(psb_dprec_type), intent(inout)  :: prec
@@ -26,18 +30,18 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   type(psb_ctxt_type) :: ctxt
   integer(psb_ipk_)   :: istop_, itmax_, itrace_, FGS_sweeps_
   character(len=3)    :: base_type_, Gram_solver_
-  integer(psb_ipk_)   :: err_act, np, me, debug_level, debug_unit, n_col, n_row
+  integer(psb_ipk_)   :: err_act, np, me, debug_level, debug_unit, &
+                          & n_col, n_row
   integer(psb_lpk_)   :: mglob
   character(len=20)           :: name = 'psb_dscg'
   character(len=*), parameter :: methdbasename = 'sStepCG'
   character(len=20)           :: methdfullname
 
-  real(psb_dpk_), allocatable     :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
-  integer(psb_ipk_), allocatable  :: pW(:)
-  type(psb_d_vect_type)           :: r  
-  type(psb_d_multivect_type)      :: Z, Q, P, V, temp_mv
-  real(psb_dpk_)                  :: cheb_coeff(3)
-  integer(psb_ipk_)               :: itidx
+  real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :)
+  type(psb_d_vect_type)       :: r  
+  type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
+  real(psb_dpk_)              :: cheb_coeff(3)
+  integer(psb_ipk_)           :: itidx
   
   type(psb_itconv_type)         :: stopdat
   real(psb_dpk_)                :: derr
@@ -49,6 +53,14 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
 
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda) :: mvect_mold
+  type(psb_d_vect_cuda) :: vect_mold
+#else
+  type(psb_d_base_multivect_type) :: mvect_mold
+  type(psb_d_base_vect_type) :: vect_mold
+#endif
+
   info = psb_success_
   call psb_erractionsave(err_act)
   
@@ -57,7 +69,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ctxt = desc_a%get_context()
   call psb_info(ctxt, me, np)
-  if(debug_level >= psb_debug_ext_) &
+  if (debug_level >= psb_debug_ext_) &
        & write(debug_unit, *) me, ' ', trim(name), ': from psb_info ', np
   
   if(s < 1) then
@@ -68,18 +80,18 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   write(methdfullname, '(A, "(", I0, ")")') methdbasename, s
 
-  if((.not. allocated(b%v)) .or. (.not.allocated(x%v))) then 
+  if ((.not. allocated(b%v)) .or. (.not.allocated(x%v))) then 
     info = psb_err_invalid_vect_state_
     call psb_errpush(info, name)
     goto 9999
   endif
 
   istop_ = 2
-  if(present(istop)) istop_ = istop
+  if (present(istop)) istop_ = istop
   
   !  ISTOP_ = 1:  Normwise backward error, infinity norm 
   !  ISTOP_ = 2:  ||r||/||b||, 2-norm 
-  if((istop_ < 1 ) .or. (istop_ > 2 )) then
+  if ((istop_ < 1 ) .or. (istop_ > 2 )) then
     info = psb_err_invalid_istop_
     err = info
     call psb_errpush(info, name, i_err = (/istop_/))
@@ -87,19 +99,19 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   endif
 
   itmax_ = 1000
-  if(present(itmax)) itmax_ = itmax
+  if (present(itmax)) itmax_ = itmax
 
   itrace_ = 0
-  if(present(itrace)) itrace_ = itrace
+  if (present(itrace)) itrace_ = itrace
 
   base_type_ = "C"
-  if(present(base_type)) base_type_ = base_type
+  if (present(base_type)) base_type_ = base_type
 
   Gram_solver_ = lapackCC
-  if(present(Gram_solver)) Gram_solver_ = Gram_solver
+  if (present(Gram_solver)) Gram_solver_ = Gram_solver
   
   FGS_sweeps_ = 30
-  if(present(FGS_sweeps)) FGS_sweeps_ = FGS_sweeps
+  if (present(FGS_sweeps)) FGS_sweeps_ = FGS_sweeps
 
   mglob = desc_a%get_global_rows()
   n_row = desc_a%get_local_rows()
@@ -121,22 +133,22 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   !Allocate and assembly data structure
   allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, s + 1), aux_fa(4*n_col), stat = info)
-  if(info == psb_success_) call psb_geall(r, desc_a, info)
-  if(info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(P, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(V, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
-  if(info == psb_success_) call psb_geasb(r, desc_a, info)
-  if(info == psb_success_) call psb_geasb(Z, desc_a, info)
-  if(info == psb_success_) call psb_geasb(Q, desc_a, info)
-  if(info == psb_success_) call psb_geasb(P, desc_a, info)
-  if(info == psb_success_) call psb_geasb(V, desc_a, info)
-  if(info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
-  if(info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_geall(r, desc_a, info)
+  if (info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(P, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
+  if (info == psb_success_) call psb_geasb(r, desc_a, info, mold = vect_mold)
+  if (info == psb_success_) call psb_geasb(Z, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(Q, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(P, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(V, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info, mold = mvect_mold)
 
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -144,8 +156,8 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! First residual calculation
   call psb_geaxpby(done, b, dzero, r, desc_a, info)
-  if(info == psb_success_) call psb_spmm(-done, a, x, done, r, desc_a, info)
-  if(info /= psb_success_) then 
+  if (info == psb_success_) call psb_spmm(-done, a, x, done, r, desc_a, info)
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -153,7 +165,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! Init converence
   call psb_init_conv(methdfullname, istop_, itrace_, itmax_, a, x, b, eps, desc_a, stopdat, info)
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -173,7 +185,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
       goto 9999
   end select
 
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -183,7 +195,7 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
                   & mvec_temp = aux_mv, farr_temp = aux_fa)
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -248,19 +260,19 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   end do
 
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
-  if(present(err)) err = derr
-  if(present(iter)) iter = iter * s
+  if (present(err)) err = derr
+  if (present(iter)) iter = iter * s
 
-  if(info == psb_success_) call psb_gefree(r, desc_a, info)
-  if(info == psb_success_) call psb_gefree(Z, desc_a, info)
-  if(info == psb_success_) call psb_gefree(Q, desc_a, info)
-  if(info == psb_success_) call psb_gefree(P, desc_a, info)
-  if(info == psb_success_) call psb_gefree(V, desc_a, info)
-  if(info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
-  if(info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(r, desc_a, info)
+  if (info == psb_success_) call psb_gefree(Z, desc_a, info)
+  if (info == psb_success_) call psb_gefree(Q, desc_a, info)
+  if (info == psb_success_) call psb_gefree(P, desc_a, info)
+  if (info == psb_success_) call psb_gefree(V, desc_a, info)
+  if (info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
-  if(info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, aux_fa, stat = info)
-  if(info /= psb_success_) then
+  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, aux_fa, stat = info)
+  if (info /= psb_success_) then
     call psb_errpush(info,name)
     goto 9999
   end if
@@ -293,7 +305,7 @@ contains
       lambda_min = dzero
     end if
 
-    if(info /= psb_success_) then 
+    if (info /= psb_success_) then 
       info = psb_err_from_subroutine_
       return
     end if
@@ -366,6 +378,9 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   use psb_d_linsolve_conv_mod
   use psb_linsolve_mod
   use psb_pMPK_mod
+#if defined(PSB_HAVE_CUDA)
+  use psb_cuda_mod
+#endif
 
   implicit none
   type(psb_dspmat_type), intent(in)     :: a
@@ -394,12 +409,11 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=*), parameter :: methdbasename = 'sStepCGv2'
   character(len=20)           :: methdfullname
 
-  real(psb_dpk_), allocatable     :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :), B2(:, :), c0(:)
-  integer(psb_ipk_), allocatable  :: pW(:)
-  type(psb_d_vect_type)           :: r  
-  type(psb_d_multivect_type)      :: Z, Q, P, V, temp_mv
-  real(psb_dpk_)                  :: cheb_coeff(3)
-  integer(psb_ipk_)               :: itidx
+  real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :), B2(:, :), c0(:)
+  type(psb_d_vect_type)       :: r  
+  type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
+  real(psb_dpk_)              :: cheb_coeff(3)
+  integer(psb_ipk_)           :: itidx
   
   type(psb_itconv_type)         :: stopdat
   real(psb_dpk_)                :: derr 
@@ -411,6 +425,14 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
 
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda) :: mvect_mold
+  type(psb_d_vect_cuda) :: vect_mold
+#else
+  type(psb_d_base_multivect_type) :: mvect_mold
+  type(psb_d_base_vect_type) :: vect_mold
+#endif
+
   info = psb_success_
   call psb_erractionsave(err_act)
   
@@ -419,7 +441,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ctxt = desc_a%get_context()
   call psb_info(ctxt, me, np)
-  if(debug_level >= psb_debug_ext_) &
+  if (debug_level >= psb_debug_ext_) &
        & write(debug_unit, *) me, ' ', trim(name), ': from psb_info ', np
   
   if(s < 1) then
@@ -430,18 +452,18 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   write(methdfullname, '(A, "(", I0, ")")') methdbasename, s
 
-  if((.not. allocated(b%v)) .or. (.not.allocated(x%v))) then 
+  if ((.not. allocated(b%v)) .or. (.not.allocated(x%v))) then 
     info = psb_err_invalid_vect_state_
     call psb_errpush(info, name)
     goto 9999
   endif
 
   istop_ = 2
-  if(present(istop)) istop_ = istop
+  if (present(istop)) istop_ = istop
   
   !  ISTOP_ = 1:  Normwise backward error, infinity norm 
   !  ISTOP_ = 2:  ||r||/||b||, 2-norm 
-  if((istop_ < 1 ) .or. (istop_ > 2 )) then
+  if ((istop_ < 1 ) .or. (istop_ > 2 )) then
     info = psb_err_invalid_istop_
     err = info
     call psb_errpush(info, name, i_err = (/istop_/))
@@ -449,19 +471,19 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   endif
 
   itmax_ = 1000
-  if(present(itmax)) itmax_ = itmax
+  if (present(itmax)) itmax_ = itmax
 
   itrace_ = 0
-  if(present(itrace)) itrace_ = itrace
+  if (present(itrace)) itrace_ = itrace
 
   base_type_ = "C"
-  if(present(base_type)) base_type_ = base_type
+  if (present(base_type)) base_type_ = base_type
 
   Gram_solver_ = lapackCC
-  if(present(Gram_solver)) Gram_solver_ = Gram_solver
+  if (present(Gram_solver)) Gram_solver_ = Gram_solver
   
   FGS_sweeps_ = 30
-  if(present(FGS_sweeps)) FGS_sweeps_ = FGS_sweeps
+  if (present(FGS_sweeps)) FGS_sweeps_ = FGS_sweeps
 
   mglob = desc_a%get_global_rows()
   n_row = desc_a%get_local_rows()
@@ -483,22 +505,22 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   !Allocate and assembly data structure
   allocate(alpha(s), beta(s, s), W(s, s), pW(s), temp_fa(s, 2*s + 1), B2(s, s), c0(s), aux_fa(4*n_col), stat = info)
-  if(info == psb_success_) call psb_geall(r, desc_a, info)
-  if(info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(P, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(V, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
-  if(info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
-  if(info == psb_success_) call psb_geasb(r, desc_a, info)
-  if(info == psb_success_) call psb_geasb(Z, desc_a, info)
-  if(info == psb_success_) call psb_geasb(Q, desc_a, info)
-  if(info == psb_success_) call psb_geasb(P, desc_a, info)
-  if(info == psb_success_) call psb_geasb(V, desc_a, info)
-  if(info == psb_success_) call psb_geasb(temp_mv, desc_a, info)
-  if(info == psb_success_) call psb_geasb(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_geall(r, desc_a, info)
+  if (info == psb_success_) call psb_geall(Z, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(Q, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(P, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(V, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(temp_mv, desc_a, info, n = s)
+  if (info == psb_success_) call psb_geall(aux_mv, desc_a, info, n = 3)
+  if (info == psb_success_) call psb_geasb(r, desc_a, info, mold = vect_mold)
+  if (info == psb_success_) call psb_geasb(Z, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(Q, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(P, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(V, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(temp_mv, desc_a, info, mold = mvect_mold)
+  if (info == psb_success_) call psb_geasb(aux_mv, desc_a, info, mold = mvect_mold)
 
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -506,8 +528,8 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! First residual calculation
   call psb_geaxpby(done, b, dzero, r, desc_a, info)
-  if(info == psb_success_) call psb_spmm(-done, a, x, done, r, desc_a, info)
-  if(info /= psb_success_) then 
+  if (info == psb_success_) call psb_spmm(-done, a, x, done, r, desc_a, info)
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -515,7 +537,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
 
   ! Init converence
   call psb_init_conv(methdfullname, istop_, itrace_, itmax_, a, x, b, eps, desc_a, stopdat, info)
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -535,7 +557,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
       goto 9999
   end select
 
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -545,7 +567,7 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   call psb_pMPK(a, prec, r, P, V, s, desc_a, info, base_type = base_type_, &
                   & alpha = cheb_coeff(1), beta = cheb_coeff(2), gamma = cheb_coeff(3), &
                   & mvec_temp = aux_mv, farr_temp = aux_fa)
-  if(info /= psb_success_) then 
+  if (info /= psb_success_) then 
     info = psb_err_from_subroutine_ 
     call psb_errpush(info, name)
     goto 9999
@@ -624,19 +646,19 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   end do
 
   call psb_end_conv(methdfullname, itidx, desc_a, stopdat, info, derr, iter)
-  if(present(err)) err = derr
-  if(present(iter)) iter = iter * s
+  if (present(err)) err = derr
+  if (present(iter)) iter = iter * s
 
-  if(info == psb_success_) call psb_gefree(r, desc_a, info)
-  if(info == psb_success_) call psb_gefree(Z, desc_a, info)
-  if(info == psb_success_) call psb_gefree(Q, desc_a, info)
-  if(info == psb_success_) call psb_gefree(P, desc_a, info)
-  if(info == psb_success_) call psb_gefree(V, desc_a, info)
-  if(info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
-  if(info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(r, desc_a, info)
+  if (info == psb_success_) call psb_gefree(Z, desc_a, info)
+  if (info == psb_success_) call psb_gefree(Q, desc_a, info)
+  if (info == psb_success_) call psb_gefree(P, desc_a, info)
+  if (info == psb_success_) call psb_gefree(V, desc_a, info)
+  if (info == psb_success_) call psb_gefree(temp_mv, desc_a, info)
+  if (info == psb_success_) call psb_gefree(aux_mv, desc_a, info)
 
-  if(info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, B2, c0, aux_fa, stat = info)
-  if(info /= psb_success_) then
+  if (info == psb_success_) deallocate(alpha, beta, W, pW, temp_fa, B2, c0, aux_fa, stat = info)
+  if (info /= psb_success_) then
     call psb_errpush(info, name)
     goto 9999
   end if
@@ -669,7 +691,7 @@ contains
       lambda_min = dzero
     end if
 
-    if(info /= psb_success_) then 
+    if (info /= psb_success_) then 
       info = psb_err_from_subroutine_
       return
     end if

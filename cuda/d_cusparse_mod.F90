@@ -155,16 +155,49 @@ module d_cusparse_mod
   end interface
   
   interface spmvCSRGDevice
-    function d_spmvCSRGDevice(Mat,alpha,x,beta,y) &
-         &  bind(c,name="d_spmvCSRGDevice") result(res)
+    function d_spmvCSRGDevice(mat, alpha, x, beta, y) result(res) &
+         &  bind(c, name = "d_spmvCSRGDeviceF")
       use iso_c_binding
-      import  d_Cmat
-      type(d_Cmat)          :: Mat
+      import d_Cmat
+      type(d_Cmat)          :: mat
       type(c_ptr), value    :: x
       type(c_ptr), value    :: y
-      real(c_double), value :: alpha,beta
+      real(c_double), value :: alpha, beta
       integer(c_int)        :: res
     end function d_spmvCSRGDevice
+
+    function d_spmvCSRGDeviceMV(mat, alpha, x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "d_spmvCSRGDeviceMV")
+      use iso_c_binding
+      import d_Cmat
+      real(c_double), value :: alpha, beta
+      type(d_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_y
+      integer(c_int)        :: res
+    end function d_spmvCSRGDeviceMV
+
+    function d_spmvCSRGDeviceVM(mat, alpha, x, idx_x, beta, y) result(res) &
+         &  bind(c, name = "d_spmvCSRGDeviceVM")
+      use iso_c_binding
+      import d_Cmat
+      real(c_double), value :: alpha, beta
+      type(d_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x
+      integer(c_int)        :: res
+    end function d_spmvCSRGDeviceVM
+    
+    function d_spmvCSRGDeviceMMi(mat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "d_spmvCSRGDeviceMMi")
+      use iso_c_binding
+      import d_Cmat
+      real(c_double), value :: alpha, beta
+      type(d_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)        :: res
+    end function d_spmvCSRGDeviceMMi
   end interface
   
   interface CSRGHost2Device

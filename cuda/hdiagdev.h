@@ -52,16 +52,13 @@ struct HdiagDevice
 
   int cols;
 
-
   int hackSize;
 
   int allocationHeight;
-
 };
 
 typedef struct HdiagDeviceParams
-{			
-  
+{
   unsigned int elementType;
   
   // Number of rows.
@@ -76,32 +73,23 @@ typedef struct HdiagDeviceParams
   unsigned int hackSize;
   unsigned int hackCount;
   unsigned int allocationHeight;
-
-
 } HdiagDeviceParams;
 
 
+HdiagDeviceParams getHdiagDeviceParams(unsigned int rows, unsigned int columns, unsigned int allocationHeight, unsigned int hackSize, unsigned int hackCount, unsigned int elementType);
 
-HdiagDeviceParams getHdiagDeviceParams(unsigned int rows, unsigned int columns, 
-				       unsigned int allocationHeight, unsigned int hackSize,
-				       unsigned int hackCount, unsigned int elementType);
-
-int FallocHdiagDevice(void** deviceMat, unsigned int rows, unsigned int cols, 
-		      unsigned int allocationHeight, unsigned int hackSize,
-		      unsigned int hackCount, unsigned int elementType);
-
-int allocHdiagDevice(void ** remoteMatrix, HdiagDeviceParams* params);
-
-
+int FallocHdiagDevice(void** deviceMat, unsigned int rows, unsigned int cols, unsigned int allocationHeight, unsigned int hackSize, unsigned int hackCount, unsigned int elementType);
+int allocHdiagDevice(void** remoteMatrix, HdiagDeviceParams* params);
 void freeHdiagDevice(void* remoteMatrix);
 
 int writeHdiagDeviceFloat(void* deviceMat, float* val, int* hdiaOffsets, int *hackOffsets);
-int spmvHdiagDeviceFloat(void *deviceMat, float alpha, void* deviceX, 
-			  float beta, void* deviceY);
-
 int writeHdiagDeviceDouble(void* deviceMat, double* val, int* hdiaOffsets, int *hackOffsets);
-int spmvHdiagDeviceDouble(void *deviceMat, double alpha, void* deviceX, 
-			  double beta, void* deviceY);
 
+int spmvHdiagDeviceFloat(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY);
+
+int spmvHdiagDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY);
+int spmvHdiagDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY, int idxY);
+int spmvHdiagDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY);
+int spmvHdiagDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY, int idxY);
 
 #endif

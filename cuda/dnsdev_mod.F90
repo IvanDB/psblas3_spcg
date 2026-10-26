@@ -45,130 +45,120 @@ module dnsdev_mod
   end type dnsdev_parms
 
   interface 
-    function FgetDnsDeviceParams(rows, columns, elementType, firstIndex) &
-         & result(res) bind(c,name='getDnsDeviceParams')
+    function FgetDnsDeviceParams(rows, columns, elementType, firstIndex) result(res) &
+        & bind(c, name = 'getDnsDeviceParams')
       use iso_c_binding
       import :: dnsdev_parms
-      type(dnsdev_parms)    :: res
-      integer(c_int), value :: rows,columns,elementType,firstIndex
+      integer(c_int), value :: rows, columns, elementType, firstIndex
+      type(dnsdev_parms)  :: res
     end function FgetDnsDeviceParams
   end interface
 
 
   interface 
-    function FallocDnsDevice(deviceMat,rows,columns,&
-         & elementType,firstIndex) &
-         & result(res) bind(c,name='FallocDnsDevice')
+    function FallocDnsDevice(deviceMat, rows, columns, elementType, firstIndex) result(res) &
+        & bind(c, name = 'FallocDnsDevice')
       use iso_c_binding
-      integer(c_int)        :: res
-      integer(c_int), value :: rows,columns,elementType,firstIndex
       type(c_ptr)           :: deviceMat
+      integer(c_int), value :: rows, columns, elementType, firstIndex
+      integer(c_int)  :: res
     end function FallocDnsDevice
   end interface
 
 
   interface writeDnsDevice
-
-    function writeDnsDeviceFloat(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='writeDnsDeviceFloat')
+    function writeDnsDeviceFloat(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'writeDnsDeviceFloat')
       use iso_c_binding
-      integer(c_int)        :: res
       type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      real(c_float)        :: val(lda,*)
+      real(c_float)         :: val(lda, *)
+      integer(c_int), value :: lda, nc
+      integer(c_int)  :: res
     end function writeDnsDeviceFloat
 
-
-    function writeDnsDeviceDouble(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='writeDnsDeviceDouble')
+    function writeDnsDeviceDouble(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'writeDnsDeviceDouble')
       use iso_c_binding
-      integer(c_int)        :: res
       type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      real(c_double)        :: val(lda,*)
+      real(c_double)        :: val(lda, *)
+      integer(c_int), value :: lda, nc
+      integer(c_int)  :: res
     end function writeDnsDeviceDouble
 
-
-    function writeDnsDeviceFloatComplex(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='writeDnsDeviceFloatComple')
+    function writeDnsDeviceFloatComplex(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'writeDnsDeviceFloatComple')
       use iso_c_binding
-      integer(c_int)        :: res
-      type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      complex(c_float_complex)        :: val(lda,*)
+      type(c_ptr), value        :: deviceMat
+      complex(c_float_complex)  :: val(lda, *)
+      integer(c_int), value     :: lda, nc
+      integer(c_int)  :: res
     end function writeDnsDeviceFloatComplex
 
-
-    function writeDnsDeviceDoubleComplex(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='writeDnsDeviceDoubleComplex')
+    function writeDnsDeviceDoubleComplex(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'writeDnsDeviceDoubleComplex')
       use iso_c_binding
-      integer(c_int)        :: res
-      type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      complex(c_double_complex)        :: val(lda,*)
+      type(c_ptr), value        :: deviceMat
+      complex(c_double_complex) :: val(lda, *)
+      integer(c_int), value     :: lda, nc
+      integer(c_int)  :: res
     end function writeDnsDeviceDoubleComplex
-
   end interface
 
   interface readDnsDevice
-
-    function readDnsDeviceFloat(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='readDnsDeviceFloat')
+    function readDnsDeviceFloat(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'readDnsDeviceFloat')
       use iso_c_binding
-      integer(c_int)        :: res
       type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      real(c_float)        :: val(lda,*)
+      real(c_float)         :: val(lda, *)
+      integer(c_int), value :: lda, nc
+      integer(c_int)  :: res
     end function readDnsDeviceFloat
 
-
-    function readDnsDeviceDouble(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='readDnsDeviceDouble')
+    function readDnsDeviceDouble(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'readDnsDeviceDouble')
       use iso_c_binding
-      integer(c_int)        :: res
       type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      real(c_double)        :: val(lda,*)
+      real(c_double)        :: val(lda, *)
+      integer(c_int), value :: lda, nc
+      integer(c_int)  :: res
     end function readDnsDeviceDouble
 
-
-    function readDnsDeviceFloatComplex(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='readDnsDeviceFloatComple')
+    function readDnsDeviceFloatComplex(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'readDnsDeviceFloatComple')
       use iso_c_binding
-      integer(c_int)        :: res
-      type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      complex(c_float_complex)        :: val(lda,*)
+      type(c_ptr), value        :: deviceMat
+      complex(c_float_complex)  :: val(lda, *)
+      integer(c_int), value     :: lda, nc
+      integer(c_int)  :: res
     end function readDnsDeviceFloatComplex
 
-
-    function readDnsDeviceDoubleComplex(deviceMat,val,lda,nc) &
-         & result(res) bind(c,name='readDnsDeviceDoubleComplex')
+    function readDnsDeviceDoubleComplex(deviceMat, val, lda, nc) result(res) &
+        & bind(c, name = 'readDnsDeviceDoubleComplex')
       use iso_c_binding
-      integer(c_int)        :: res
-      type(c_ptr), value    :: deviceMat
-      integer(c_int), value :: lda,nc
-      complex(c_double_complex)        :: val(lda,*)
+      type(c_ptr), value        :: deviceMat
+      complex(c_double_complex) :: val(lda, *)
+      integer(c_int), value     :: lda, nc
+      integer(c_int)  :: res
     end function readDnsDeviceDoubleComplex
-
   end interface
 
   interface 
-    subroutine  freeDnsDevice(deviceMat) &
-         & bind(c,name='freeDnsDevice')
+    subroutine freeDnsDevice(deviceMat) &
+        & bind(c, name = 'freeDnsDevice')
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
     end subroutine freeDnsDevice
   end interface
 
   interface 
-    subroutine resetDnsTimer() bind(c,name='resetDnsTimer')
+    subroutine resetDnsTimer() bind(c, name = 'resetDnsTimer')
       use iso_c_binding
     end subroutine resetDnsTimer
   end interface
+
   interface 
-    function  getDnsTimer() &
-         & bind(c,name='getDnsTimer') result(res)
+    function getDnsTimer() result(res) &
+        & bind(c, name = 'getDnsTimer')
       use iso_c_binding
       real(c_double)      :: res
     end function getDnsTimer
@@ -176,17 +166,17 @@ module dnsdev_mod
 
 
   interface 
-    function  getDnsDevicePitch(deviceMat) &
-         & bind(c,name='getDnsDevicePitch') result(res)
+    function getDnsDevicePitch(deviceMat) result(res) &
+        & bind(c, name = 'getDnsDevicePitch')
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
-      integer(c_int)      :: res
+      integer(c_int)  :: res
     end function getDnsDevicePitch
   end interface
 
 !!$  interface csputDnsDeviceFloat
 !!$    function dev_csputDnsDeviceFloat(deviceMat, nnz, ia, ja, val) &
-!!$         & result(res) bind(c,name='dev_csputDnsDeviceFloat')
+!!$         & result(res) bind(c, name = 'dev_csputDnsDeviceFloat')
 !!$      use iso_c_binding
 !!$      integer(c_int)		:: res
 !!$      type(c_ptr), value 	:: deviceMat , ia, ja, val
@@ -196,7 +186,7 @@ module dnsdev_mod
 !!$
 !!$  interface csputDnsDeviceDouble
 !!$    function dev_csputDnsDeviceDouble(deviceMat, nnz, ia, ja, val) &
-!!$         & result(res) bind(c,name='dev_csputDnsDeviceDouble')
+!!$         & result(res) bind(c, name = 'dev_csputDnsDeviceDouble')
 !!$      use iso_c_binding
 !!$      integer(c_int)		:: res
 !!$      type(c_ptr), value 	:: deviceMat , ia, ja, val
@@ -206,7 +196,7 @@ module dnsdev_mod
 !!$
 !!$  interface csputDnsDeviceFloatComplex
 !!$    function dev_csputDnsDeviceFloatComplex(deviceMat, nnz, ia, ja, val) &
-!!$         & result(res) bind(c,name='dev_csputDnsDeviceFloatComplex')
+!!$         & result(res) bind(c, name = 'dev_csputDnsDeviceFloatComplex')
 !!$      use iso_c_binding
 !!$      integer(c_int)		:: res
 !!$      type(c_ptr), value 	:: deviceMat , ia, ja, val
@@ -216,7 +206,7 @@ module dnsdev_mod
 !!$
 !!$  interface csputDnsDeviceDoubleComplex
 !!$    function dev_csputDnsDeviceDoubleComplex(deviceMat, nnz, ia, ja, val) &
-!!$         & result(res) bind(c,name='dev_csputDnsDeviceDoubleComplex')
+!!$         & result(res) bind(c, name = 'dev_csputDnsDeviceDoubleComplex')
 !!$      use iso_c_binding
 !!$      integer(c_int)		:: res
 !!$      type(c_ptr), value 	:: deviceMat , ia, ja, val
@@ -225,46 +215,74 @@ module dnsdev_mod
 !!$  end interface
 
   interface spmvDnsDevice
-    function spmvDnsDeviceFloat(transa,m,n,k,alpha,deviceMat,x,beta,y) &
-         & result(res) bind(c,name='spmvDnsDeviceFloat')
+    function spmvDnsDeviceFloat(transa, m, n, k, alpha, deviceMat, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceFloat')
       use iso_c_binding
       character(c_char), value  :: transa
-      integer(c_int), value    :: m, n, k
-      integer(c_int)		:: res
-      type(c_ptr), value	:: deviceMat, x, y 
-      real(c_float)             :: alpha,  beta
+      integer(c_int), value     :: m, n, k
+      real(c_float)             :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y 
+      integer(c_int)  :: res
     end function spmvDnsDeviceFloat
 
-    function spmvDnsDeviceDouble(transa,m,n,k,alpha,deviceMat,x,beta,y) &
-         & result(res) bind(c,name='spmvDnsDeviceDouble')
+    function spmvDnsDeviceDoubleF(transa, m, n, k, alpha, deviceMat, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceDoubleF')
       use iso_c_binding
       character(c_char), value  :: transa
       integer(c_int), value     :: m, n, k
-      integer(c_int)		:: res
-      type(c_ptr), value	:: deviceMat, x, y 
-      real(c_double)            :: alpha,  beta
-    end function spmvDnsDeviceDouble
-
-    function spmvDnsDeviceFloatComplex(transa,m,n,k,alpha,deviceMat,x,beta,y) &
-         & result(res) bind(c,name='spmvDnsDeviceFloatComplex')
-      use iso_c_binding
-      character(c_char), value  :: transa
-      integer(c_int), value     :: m, n, k
-      integer(c_int)	        :: res
+      real(c_double)            :: alpha, beta
       type(c_ptr), value        :: deviceMat, x, y 
-      complex(c_float_complex)  :: alpha,  beta
+      integer(c_int)  :: res
+    end function spmvDnsDeviceDoubleF
+
+    function spmvDnsDeviceDoubleMV(transa, m, n, k, alpha, deviceMat, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceDoubleMV')
+      use iso_c_binding
+      character(c_char), value  :: transa
+      integer(c_int), value     :: m, n, k, idx_y
+      real(c_double)            :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y 
+      integer(c_int)  :: res
+    end function spmvDnsDeviceDoubleMV
+
+    function spmvDnsDeviceDoubleVM(transa, m, n, k, alpha, deviceMat, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceDoubleVM')
+      use iso_c_binding
+      character(c_char), value  :: transa
+      integer(c_int), value     :: m, n, k, idx_x
+      real(c_double)            :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y 
+      integer(c_int)  :: res
+    end function spmvDnsDeviceDoubleVM
+
+    function spmvDnsDeviceDoubleMMi(transa, m, n, k, alpha, deviceMat, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceDoubleMMi')
+      use iso_c_binding
+      character(c_char), value  :: transa
+      integer(c_int), value     :: m, n, k, idx_x, idx_y
+      real(c_double)            :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y 
+      integer(c_int)  :: res
+    end function spmvDnsDeviceDoubleMMi
+
+    function spmvDnsDeviceFloatComplex(transa, m, n, k, alpha, deviceMat, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceFloatComplex')
+      use iso_c_binding
+      character(c_char), value  :: transa
+      integer(c_int), value     :: m, n, k
+      complex(c_float_complex)  :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y 
+      integer(c_int)  :: res
     end function spmvDnsDeviceFloatComplex
 
-    function spmvDnsDeviceDoubleComplex(transa,m,n,k,alpha,deviceMat,x,beta,y) &
-         & result(res) bind(c,name='spmvDnsDeviceDoubleComplex')
+    function spmvDnsDeviceDoubleComplex(transa, m, n, k, alpha, deviceMat, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDnsDeviceDoubleComplex')
       use iso_c_binding
       character(c_char), value  :: transa
       integer(c_int), value     :: m, n, k
-      integer(c_int)	        :: res
-      type(c_ptr), value        :: deviceMat, x, y 
-      complex(c_double_complex) :: alpha,  beta
+      complex(c_double_complex) :: alpha, beta
+      type(c_ptr), value        :: deviceMat, x, y
+      integer(c_int)  :: res
     end function spmvDnsDeviceDoubleComplex
-
   end interface
-
 end module dnsdev_mod
