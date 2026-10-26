@@ -16,10 +16,11 @@ extern "C"
 {
 	#include "vector.h"
 	cublasHandle_t psb_cudaGetCublasHandle();
+
 	static double cuDone = 1.0;
 	static double cuDzero = 0.0;
-
 	static CFIBuffer dotBuffer;
+	CFIBuffer* getDotBuffer() {return &dotBuffer};
 }
 
 #define BLOCK_SIZE 512

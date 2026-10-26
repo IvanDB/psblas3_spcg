@@ -181,6 +181,27 @@ typedef struct
 	size_t hostSize;
 } CFIBuffer;
 
+CFIBuffer* getDotBuffer();
+CFIBuffer* getColspanBuffer();
+
+
+static int resetCFIbuffer(CFIBuffer* buffer)
+{
+	if(buffer->devBuffer) cudaFree(buffer->devBuffer);
+	buffer->devBuffer = NULL;
+	buffer->devSize = 0;
+
+	if(buffer->hostBuffer) free(buffer->hostBuffer);
+	buffer->hostBuffer = NULL;
+	buffer->hostSize = 0;
+
+	return SPGPU_SUCCESS;
+}
+
+static int resetCFIstaticBuffers()
+{
+	return (resetCFIbuffer(getDotBuffer()) == SPGPU_SUCCESS) && (resetCFIbuffer(getColspanBuffer()) == SPGPU_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSPECIFIED;
+}
 
 static void CFIdevBufferAlloc(CFIBuffer* buffer, size_t byteCount)
 {
