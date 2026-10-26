@@ -336,16 +336,12 @@ int axpbyczMultiVecDeviceDouble5(int n, double alpha, void* devMultiVecX, int id
   if((n > devVecW->size_) || (n > devVecZ->size_) || (n > devVecY->size_) || (n > devVecX->size_ )) 
     return SPGPU_UNSUPPORTED;
   
-  if((devVecX->count_ != devVecW->count_) || (devVecX->count_ != devVecW->count_) || (devVecZ->count_ != devVecW->count_))
-    return SPGPU_UNSUPPORTED;
-
   double* xColAdd = ((double*) devVecX->v_) + (IDX_F2C(idxX) * devVecX->pitch_);
   double* yColAdd = ((double*) devVecY->v_) + (IDX_F2C(idxY) * devVecY->pitch_);
   double* zColAdd = ((double*) devVecZ->v_) + (IDX_F2C(idxZ) * devVecZ->pitch_);
   double* wColAdd = ((double*) devVecW->v_) + (IDX_F2C(idxW) * devVecW->pitch_);
 
-  for(int j = 0; j < devVecZ->count_; ++j)
-    spgpuDaxpbycz(handle, wColAdd, n, gamma, zColAdd, beta, yColAdd, alpha, xColAdd);
+  spgpuDaxpbycz(handle, wColAdd, n, gamma, zColAdd, beta, yColAdd, alpha, xColAdd);
   
   return SPGPU_SUCCESS;
 }
