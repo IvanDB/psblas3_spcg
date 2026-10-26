@@ -36,10 +36,12 @@
 #include "driver_types.h"
 #include "cuComplex.h"
 #include <stdbool.h>
+#include <string.h>
 
 #include "ISO_Fortran_binding.h"
-#define CFI_AT1(T, d, i) 	(*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm))
-#define CFI_AT2(T, d, i, j) (*(T *)((unsigned char *)(d)->base_addr + (size_t)(i) * (d)->dim[0].sm + (size_t)(j) * (d)->dim[1].sm))
+typedef unsigned char CFIbyte_t;
+#define CFI_AT1(T, d, i) 	(*(T *)((CFIbyte_t*)(d)->base_addr + (ptrdiff_t)(i) * (d)->dim[0].sm))
+#define CFI_AT2(T, d, i, j) (*(T *)((CFIbyte_t*)(d)->base_addr + (ptrdiff_t)(i) * (d)->dim[0].sm + (ptrdiff_t)(j) * (d)->dim[1].sm))
 
 #define IDX_F2C(fIdx) ((size_t) (fIdx) - 1)
 
@@ -175,13 +177,12 @@ typedef struct
 {
 	__device void *devBuffer; 
 	size_t devSize; 
-	void *pinBuffer; 
-	size_t pinSize;
-    cudaEvent_t pinInUse;
+	void *hostBuffer; 
+	size_t hostSize;
 } CFIBuffer;
 
 
-static void CFIBufferAlloc(CFIBuffer* buffer, size_t byteCount)
+static void CFIdevBufferAlloc(CFIBuffer* buffer, size_t byteCount)
 {
 	if(buffer->devSize >= byteCount)
 		return;
@@ -191,6 +192,16 @@ static void CFIBufferAlloc(CFIBuffer* buffer, size_t byteCount)
 	buffer->devSize = byteCount;
 }
 
+static void CFIhostBufferAlloc(CFIBuffer* buffer, size_t byteCount)
+{
+	if(buffer->hostSize >= byteCount)
+		return;
+
+	if(buffer->hostBuffer) free(buffer->hostBuffer);
+	buffer->hostBuffer = malloc(byteCount);
+	buffer->hostSize = byteCount;
+}
+
 static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuffer* buffer)
 {
 	size_t es = cdesc->elem_len;
@@ -198,12 +209,32 @@ static void CFIBufferLoad(spgpuHandle_t handle, const CFI_cdesc_t* cdesc, CFIBuf
     size_t n  = (cdesc->rank == 2) ? (size_t)cdesc->dim[1].extent : 1;
     size_t bytes = m * n * es;
 
-	CFIBufferAlloc(buffer, bytes);
+	CFIdevBufferAlloc(buffer, bytes);
 
 	if(CFI_is_contiguous(cdesc))
+	{
 		cudaMemcpyAsync(buffer->devBuffer, cdesc->base_addr, bytes, cudaMemcpyHostToDevice, handle->currentStream);
+	}
 	else
-		printf("CFI buffer is not contiguous, this is WIP\n");
+	{
+		CFIhostBufferAlloc(buffer, bytes);
+		switch(cdesc->rank)
+		{
+			case 1:
+				for(size_t i = 0; i < m; ++i)
+					memcpy(((CFIbyte_t*) buffer->hostBuffer) + i*es, &CFI_AT1(CFIbyte_t, cdesc, i), es);
+				break;
+			case 2:
+				for(size_t i = 0; i < m; ++i)
+					for(size_t j = 0; j < n; ++j)
+						memcpy(((CFIbyte_t*) buffer->hostBuffer) + (i + j*m)*es, &CFI_AT2(unsigned char, cdesc, i, j), es);
+				break;
+			default:
+				printf("Error in CFIBufferLoad: unsupported CFI rank\n");
+				return;
+		}
+		cudaMemcpyAsync(buffer->devBuffer, buffer->hostBuffer, bytes, cudaMemcpyHostToDevice, handle->currentStream);
+	}
 }
 
 static void CFIBufferStore(spgpuHandle_t handle, CFI_cdesc_t* cdesc, CFIBuffer* buffer, size_t bytes)
@@ -211,13 +242,35 @@ static void CFIBufferStore(spgpuHandle_t handle, CFI_cdesc_t* cdesc, CFIBuffer* 
 	size_t es = cdesc->elem_len;
     size_t m  = (size_t)cdesc->dim[0].extent;
     size_t n  = (cdesc->rank == 2) ? (size_t)cdesc->dim[1].extent : 1;
-    if(bytes > m * n * es) 
+    if(bytes != m * n * es) 
 		return;
 	
 	if(CFI_is_contiguous(cdesc))
-		cudaMemcpy(cdesc->base_addr, buffer->devBuffer, bytes, cudaMemcpyDeviceToHost);
+	{
+		cudaMemcpyAsync(cdesc->base_addr, buffer->devBuffer, bytes, cudaMemcpyDeviceToHost, handle->currentStream);
+		cudaStreamSynchronize(handle->currentStream);
+	}
 	else
-		printf("CFI buffer is not contiguous, this is WIP\n");
+	{
+		CFIhostBufferAlloc(buffer, bytes);
+		cudaMemcpyAsync(buffer->hostBuffer, buffer->devBuffer, bytes, cudaMemcpyDeviceToHost, handle->currentStream);
+		cudaStreamSynchronize(handle->currentStream);
+		switch(cdesc->rank)
+		{
+			case 1:
+				for(size_t i = 0; i < m; ++i)
+					memcpy(&CFI_AT1(CFIbyte_t, cdesc, i), ((CFIbyte_t*) buffer->hostBuffer) + i*es, es);
+				break;
+			case 2:
+				for(size_t i = 0; i < m; ++i)
+					for(size_t j = 0; j < n; ++j)
+						memcpy(&CFI_AT2(CFIbyte_t, cdesc, i, j), ((CFIbyte_t*) buffer->hostBuffer) + (i + j*m)*es, es);
+				break;
+			default:
+				printf("Error in CFIBufferStore: unsupported CFI rank\n");
+				return;
+		}
+	}
 }
 
 #define cuFloatComplex_isZero(a) 		(a.x == 0.0f && a.y == 0.0f)

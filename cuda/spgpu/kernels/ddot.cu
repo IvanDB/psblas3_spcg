@@ -162,7 +162,7 @@ void spgpuDmvdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device doubl
 {
 	#ifdef USE_CUBLAS
 		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
-		CFIBufferAlloc(&dotBuffer, countA * (y->elem_len));
+		CFIdevBufferAlloc(&dotBuffer, countA * (y->elem_len));
 		cublasDgemv(cublasHandle, CUBLAS_OP_T, n, countA, &cuDone, a, pitchA, b, 1, &cuDzero, (double*) dotBuffer.devBuffer, 1);
 		cudaDeviceSynchronize();
 		CFIBufferStore(handle, y, &dotBuffer, countA * (y->elem_len));
