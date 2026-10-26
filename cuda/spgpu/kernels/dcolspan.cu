@@ -23,7 +23,7 @@ extern "C"
 	static double cuDone = 1.0;
 	static double cuDzero = 0.0;
 	static CFIBuffer coeffBuffer;
-	CFIBuffer* getColspanBuffer() {return &coeffBuffer};
+	CFIBuffer* getColspanBuffer() {return &coeffBuffer;};
 }
 
 #include "debug.h"

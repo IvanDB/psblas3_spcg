@@ -20,7 +20,7 @@ extern "C"
 	static double cuDone = 1.0;
 	static double cuDzero = 0.0;
 	static CFIBuffer dotBuffer;
-	CFIBuffer* getDotBuffer() {return &dotBuffer};
+	CFIBuffer* getDotBuffer() {return &dotBuffer;};
 }
 
 #define BLOCK_SIZE 512
@@ -196,7 +196,7 @@ void spgpuDmmdot_CFI(spgpuHandle_t handle, CFI_cdesc_t* y, int n, __device doubl
 {
 	#ifdef USE_CUBLAS
 		cublasHandle_t cublasHandle = psb_cudaGetCublasHandle();
-		CFIBufferAlloc(&dotBuffer, countA * countB * (y->elem_len));
+		CFIdevBufferAlloc(&dotBuffer, countA * countB * (y->elem_len));
 		cublasDgemm(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, countA, countB, n, &cuDone, a, pitchA, b, pitchB, &cuDzero, (double*) dotBuffer.devBuffer, countA);
 		cudaDeviceSynchronize();
 		CFIBufferStore(handle, y, &dotBuffer, countA * countB * (y->elem_len));
