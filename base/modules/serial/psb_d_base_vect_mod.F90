@@ -461,7 +461,6 @@ contains
   !! \memberof  psb_d_base_vect_type
   !! \brief Insert coefficients.
   !!
-  !!
   !!         Given a list of N pairs
   !!           (IRL(i), VAL(i))
   !!         record a new coefficient in X such that
@@ -1271,13 +1270,15 @@ contains
   !
   function d_base_get_entry(x, index) result(res)
     implicit none
-    class(psb_d_base_vect_type), intent(in) :: x
-    integer(psb_ipk_), intent(in)           :: index
+    class(psb_d_base_vect_type), intent(inout)  :: x
+    integer(psb_ipk_), intent(in)               :: index
     real(psb_dpk_)  :: res
 
     res = 0
-	if(.not. allocated(x%v)) return
-    if(allocated(x%v)) res = x%v(index)
+    if(allocated(x%v)) then
+      if(x%is_dev()) call x%sync()
+      res = x%v(index)
+    end if
   end function d_base_get_entry
 
   subroutine d_base_set_entry(x, index, val)
@@ -1323,8 +1324,7 @@ contains
 
   subroutine d_base_absval2(x, y)
     implicit none
-    class(psb_d_base_vect_type), intent(inout)  :: x
-    class(psb_d_base_vect_type), intent(inout)  :: y
+    class(psb_d_base_vect_type), intent(inout)  :: x, y
 
     integer(psb_ipk_) :: info
 	
@@ -1350,7 +1350,7 @@ contains
     integer(psb_ipk_), intent(in)               :: n
     class(psb_d_base_vect_type), intent(inout)  :: x, y
     real(psb_dpk_)  :: res
-
+    
     real(psb_dpk_), external  :: ddot
     res = dzero
     !
@@ -1727,7 +1727,7 @@ contains
     else
       conjgx_ = .false.
       if(present(conjgx)) conjgx_ = (psb_toupper(conjgx) == 'C')
-      conjgy_=.false.
+      conjgy_ = .false.
       if(present(conjgy)) conjgy_ = (psb_toupper(conjgy) == 'C')
       if(conjgx_) x%v = (x%v)
       if(conjgy_) y%v = (y%v)
@@ -2116,9 +2116,10 @@ contains
     integer(psb_ipk_), intent(in)               :: n
     class(psb_d_base_vect_type), intent(inout)  :: x
     real(psb_dpk_)  :: res
+    real(psb_dpk_), external  :: dnrm2
 
     if(x%is_dev()) call x%sync()
-    res =  dnrm2(n, x%v, 1)
+    res = dnrm2(n, x%v, 1)
   end function d_base_nrm2
 
   !
@@ -2521,7 +2522,6 @@ contains
     if(c%is_dev()) call c%sync()
     call m%mask(x%v, c%v, t, info)
   end subroutine d_base_mask_v
-
 
   !
   !> Function  _base_addconst_a2
@@ -3577,12 +3577,9 @@ contains
     class(psb_d_base_vect_type), intent(inout)      :: y
     integer(psb_ipk_), intent(out)                  :: info
 
-    select type(x)
-      type is (psb_d_base_multivect_type)
-        call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v, info)
-      class default
-        info = psb_err_invalid_input_
-    end select
+    if(y%is_dev()) call y%sync()
+    call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v, info)
+    call y%set_host()
   end subroutine d_base_mvect_extract_col
 
   subroutine d_base_mvect_axpby_v_idxs(m, alpha, x, beta, y, idx_y, info)
@@ -3630,12 +3627,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y
     integer(psb_ipk_), intent(out)                  :: info
 
-    select type(x)
-      type is (psb_d_base_multivect_type)
-        call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), info)
-      class default
-        info = psb_err_invalid_input_
-    end select
+    if(x%is_dev()) call x%sync()
+    call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), info)
   end subroutine d_base_mvect_axpby_m_idxs
 
   subroutine d_base_mvect_axpby_m_full(m, alpha, x, beta, y, info)
@@ -3646,12 +3639,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y
     integer(psb_ipk_), intent(out)                  :: info
 
-    select type(x)
-      type is (psb_d_base_multivect_type)
-        call psb_geaxpby(m, y%get_ncols(), alpha, x%v, beta, y%v, info)
-      class default
-        info = psb_err_invalid_input_
-    end select
+    if(x%is_dev()) call x%sync()
+    call psb_geaxpby(m, y%get_ncols(), alpha, x%v, beta, y%v, info)
   end subroutine d_base_mvect_axpby_m_full
 
   subroutine d_base_mvect_axpby_m_full_out(m, alpha, x, beta, y, z, info)
@@ -3662,12 +3651,9 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    select type(x)
-      type is (psb_d_base_multivect_type)
-        call psb_geaxpby(m, y%get_ncols(), alpha, x%v, beta, y%v, z%v, info)
-      class default
-        info = psb_err_invalid_input_
-    end select
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call psb_geaxpby(m, y%get_ncols(), alpha, x%v, beta, y%v, z%v, info)
   end subroutine d_base_mvect_axpby_m_full_out
 
   subroutine d_base_mvect_axpbycz_vv(m, alpha, x, beta, y, gamma, z, idx_z, info)
@@ -3680,7 +3666,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: z
     integer(psb_ipk_), intent(out)                  :: info
 
-    !TODO: type check
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_geaxpby(m, alpha, x%v, beta, y%v, gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_vv
 
@@ -3694,7 +3681,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    !TODO: type check
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_geaxpby(m, alpha, x%v, beta, y%v(:, idx_y), gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_mv
 
@@ -3706,7 +3694,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    !TODO: type check
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), gamma, z%v(:, idx_z), info)
   end subroutine d_base_mvect_axpbycz_mm_idxs
 
@@ -3718,12 +3707,10 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z
     integer(psb_ipk_), intent(out)                  :: info
 
-    select type(x)
-      type is (psb_d_base_multivect_type)
-        call psb_geaxpby(m, z%get_ncols(), alpha, x%v, beta, y%v, gamma, z%v, info)
-      class default
-        info = psb_err_invalid_input_
-    end select
+    !TODO: type check
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
+    call psb_geaxpby(m, z%get_ncols(), alpha, x%v, beta, y%v, gamma, z%v, info)
   end subroutine d_base_mvect_axpbycz_mm_full
 
   subroutine d_base_mvect_axpbycz_mm_out(m, alpha, x, idx_x, beta, y, idx_y, gamma, z, idx_z, w, idx_w, info)
@@ -3734,7 +3721,8 @@ contains
     class(psb_d_base_multivect_type), intent(inout) :: x, y, z, w
     integer(psb_ipk_), intent(out)                  :: info
 
-    !TODO: type check
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_geaxpby(m, alpha, x%v(:, idx_x), beta, y%v(:, idx_y), gamma, z%v(:, idx_z), w%v(:, idx_w), info)
   end subroutine d_base_mvect_axpbycz_mm_out
 
@@ -3769,8 +3757,10 @@ contains
       return
     end if
 
+    if(upd_flag .and. y%is_dev()) call y%sync()
     ! BUG? Why ONLY here needs size as leading dimension?
     call dgemv('N', m, nc, done, x%v, size(x%v, 1), coeff, 1, beta, y%v, 1)
+    call y%set_host()
   end subroutine d_base_mvect_colspan1D
 
   subroutine d_base_mvect_colspan2D(m, x, coeff, y, info, upd_flag)
@@ -3798,7 +3788,9 @@ contains
     end if
 
     ! BUG? Why ONLY here needs size as leading dimension?
+    if(upd_flag .and. y%is_dev()) call y%sync()
     call dgemm('N', 'N', m, nco, nci, done, x%v, size(x%v, 1), coeff, nci, beta, y%v, size(y%v, 1))
+    call y%set_host()
   end subroutine d_base_mvect_colspan2D
 
   subroutine d_base_mvect_dot_mm(m, x, y, res, info)
@@ -3825,7 +3817,13 @@ contains
     ncx = x%get_ncols()
     ncy = y%get_ncols()
 
-    call dgemm('T', 'N', ncx, ncy, nrx, done, x%v, nrx, y%v, nry, dzero, res, ncx)
+    select type(y)
+      type is (psb_d_base_multivect_type)
+        call dgemm('T', 'N', ncx, ncy, nrx, done, x%v, nrx, y%v, nry, dzero, res, ncx)
+      
+      class default
+        call y%dotsbr(m, x, y, res, info)
+    end select
   end subroutine d_base_mvect_dot_mm
 
   subroutine d_base_mvect_dot_mv(m, x, y, res, info)
@@ -3857,6 +3855,7 @@ contains
 
     ncx = x%get_ncols()
 
+    if(y%is_dev()) call y%sync()
     call dgemv('T', nrx, ncx, done, x%v, nrx, y%v, 1, dzero, res, 1)
   end subroutine d_base_mvect_dot_mv
 
@@ -3881,6 +3880,7 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
     call psb_gemlt(m, y%get_ncols(), alpha, x%v, y%v, beta, info)
   end subroutine d_base_mvect_mlt_v_full
 
@@ -3906,6 +3906,7 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
     call psb_gemlt(m, alpha, x%v, y%v(:, idx_y), beta, info)
   end subroutine d_base_mvect_mlt_v_idxs
 
@@ -3924,6 +3925,7 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
     call psb_gemlt(m, y%get_ncols(), alpha, x%v, y%v, beta, info)
   end subroutine d_base_mvect_mlt_m_full
 
@@ -3943,6 +3945,7 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
     call psb_gemlt(m, alpha, x%v(:, idx_x), y%v(:, idx_y), beta, info)
   end subroutine d_base_mvect_mlt_m_idxs
 
@@ -3967,6 +3970,8 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, z%get_ncols(), alpha, x%v, y%v, beta, z%v, info)    
   end subroutine d_base_mvect_mlt_vv_full_out
 
@@ -3992,6 +3997,8 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, alpha, x%v, y%v, beta, z%v(:, idx_z), info)
   end subroutine d_base_mvect_mlt_vv_idxs_out
 
@@ -4016,6 +4023,8 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, z%get_ncols(), alpha, x%v, y%v, beta, z%v, info)    
   end subroutine d_base_mvect_mlt_vm_full_out
 
@@ -4041,6 +4050,8 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, alpha, x%v, y%v(:, idx_y), beta, z%v(:, idx_z), info)
   end subroutine d_base_mvect_mlt_vm_idxs_out
 
@@ -4060,6 +4071,8 @@ contains
       return
     end if
     
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, z%get_ncols(), alpha, x%v, y%v, beta, z%v, info)
   end subroutine d_base_mvect_mlt_mm_full_out
 
@@ -4080,6 +4093,8 @@ contains
       return
     end if
 
+    if(x%is_dev()) call x%sync()
+    if(y%is_dev()) call y%sync()
     call psb_gemlt(m, alpha, x%v(:, idx_x), y%v(:, idx_y), beta, z%v(:, idx_z), info)
   end subroutine d_base_mvect_mlt_mm_idxs_out
 
@@ -4105,7 +4120,10 @@ contains
       return
     end if
     
+    if(x%is_dev()) call x%sync()
+    if(z%is_dev()) call z%sync()
     call psb_gemlt(m, alpha, x%v, y%v(:, idx_y), beta, z%v, info)
+    call z%set_host()
   end subroutine d_base_mvect_mlt_vm_ext
 
   subroutine d_base_mvect_mlt_mm_ext(m, alpha, x, idx_x, y, idx_y, beta, z, info, conjgx, conjgy)
@@ -4130,7 +4148,10 @@ contains
       return
     end if
     
+    if(x%is_dev()) call x%sync()
+    if(z%is_dev()) call z%sync()
     call psb_gemlt(m, alpha, x%v(:, idx_x), y%v(:, idx_y), beta, z%v, info)
+    call z%set_host()
   end subroutine d_base_mvect_mlt_mm_ext
 
   function d_base_mvect_nrm2_full(m, x) result(res)
@@ -4495,7 +4516,7 @@ contains
     integer(psb_ipk_)                 :: i
     integer(psb_mpk_)                 :: n
     class(psb_i_base_vect_type)       :: idx
-    real( psb_dpk_)                   :: x(:), beta
+    real(psb_dpk_)                    :: x(:), beta
     class(psb_d_base_multivect_type)  :: y
 
     call y%sct(n, idx%v(i : ), x, beta)
