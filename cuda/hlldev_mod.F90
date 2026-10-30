@@ -225,13 +225,40 @@ module hlldev_mod
   !end interface
 
   interface spmvHllDevice
-    function spmvHllDeviceFloat(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvHllDeviceFloat')
+    function spmvHllDeviceFloatF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatF')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_float), value  :: alpha, beta
       integer(c_int)  :: res
-    end function spmvHllDeviceFloat
+    end function spmvHllDeviceFloatF
+
+    function spmvHllDeviceFloatMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatMV')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatMV
+
+    function spmvHllDeviceFloatVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleVM')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_x
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatVM
+
+    function spmvHllDeviceFloatMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleMMi')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatMMi
 
     function spmvHllDeviceDoubleF(deviceMat, alpha, x, beta, y) result(res) &
         & bind(c, name = 'spmvHllDeviceDoubleF')
@@ -268,20 +295,74 @@ module hlldev_mod
       integer(c_int)  :: res
     end function spmvHllDeviceDoubleMMi
 
-    function spmvHllDeviceFloatComplex(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvHllDeviceFloatComplex')
+    function spmvHllDeviceFloatComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatComplexF')
       use iso_c_binding
       type(c_ptr), value              :: deviceMat, x, y
       complex(c_float_complex), value :: alpha, beta
       integer(c_int)  :: res
-    end function spmvHllDeviceFloatComplex
+    end function spmvHllDeviceFloatComplexF
 
-    function spmvHllDeviceDoubleComplex(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvHllDeviceDoubleComplex')
+    function spmvHllDeviceFloatComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatComplexMV')
+      use iso_c_binding
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatComplexMV
+
+    function spmvHllDeviceFloatComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatComplexVM')
+      use iso_c_binding
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_x
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatComplexVM
+
+    function spmvHllDeviceFloatComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceFloatComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceFloatComplexMMi
+
+    function spmvHllDeviceDoubleComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleComplexF')
       use iso_c_binding
       type(c_ptr), value                :: deviceMat, x, y
       complex(c_double_complex), value  :: alpha, beta
       integer(c_int)  :: res
-    end function spmvHllDeviceDoubleComplex
+    end function spmvHllDeviceDoubleComplexF
+
+    function spmvHllDeviceDoubleComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleComplexMV')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceDoubleComplexMV
+
+    function spmvHllDeviceDoubleComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleComplexVM')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x
+      integer(c_int)  :: res
+    end function spmvHllDeviceDoubleComplexVM
+
+    function spmvHllDeviceDoubleComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvHllDeviceDoubleComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvHllDeviceDoubleComplexMMi
   end interface
 end module hlldev_mod

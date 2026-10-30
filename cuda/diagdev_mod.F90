@@ -185,16 +185,43 @@ module diagdev_mod
   end interface
 
   interface spmvDiagDevice
-    function spmvDiagDeviceFloat(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvDiagDeviceFloat')
+    function spmvDiagDeviceFloatF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatF')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_float), value  :: alpha, beta
       integer(c_int)  :: res
-    end function spmvDiagDeviceFloat
+    end function spmvDiagDeviceFloatF
+
+    function spmvDiagDeviceFloatMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatMV')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_y
+      integer(c_int)  :: res
+    end function spmvDiagDeviceFloatMV
+
+    function spmvDiagDeviceFloatVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatVM')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_x
+      integer(c_int)  :: res
+    end function spmvDiagDeviceFloatVM
+
+    function spmvDiagDeviceFloatMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatMMi')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvDiagDeviceFloatMMi
 
     function spmvDiagDeviceDoubleF(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvDiagDeviceDouble')
+        & bind(c, name = 'spmvDiagDeviceDoubleF')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_double), value :: alpha, beta
@@ -218,7 +245,7 @@ module diagdev_mod
       integer(c_int), value :: idx_x
       integer(c_int)  :: res
     end function spmvDiagDeviceDoubleVM
-
+    
     function spmvDiagDeviceDoubleMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
         & bind(c, name = 'spmvDiagDeviceDoubleMMi')
       use iso_c_binding
@@ -227,21 +254,75 @@ module diagdev_mod
       integer(c_int), value :: idx_x, idx_y
       integer(c_int)  :: res
     end function spmvDiagDeviceDoubleMMi
-
-    function spmvDiagDeviceFloatComplex(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvDiagDeviceFloatComplex')
+    
+    function spmvDiagDeviceFloatComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatComplexF')
       use iso_c_binding
-      type(c_ptr), value              :: deviceMat, x, y 
+      type(c_ptr), value              :: deviceMat, x, y
       complex(c_float_complex), value :: alpha, beta
       integer(c_int)  :: res
-    end function spmvDiagDeviceFloatComplex
+    end function spmvDiagDeviceFloatComplexF
 
-    function spmvDiagDeviceDoubleComplex(deviceMat, alpha, x, beta, y) result(res) &
-        & bind(c, name = 'spmvDiagDeviceDoubleComplex')
+    function spmvDiagDeviceFloatComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatComplexMV')
       use iso_c_binding
-      type(c_ptr), value                :: deviceMat, x, y 
-      complex(c_double_complex), value  :: alpha,  beta
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_y
       integer(c_int)  :: res
-    end function spmvDiagDeviceDoubleComplex
+    end function spmvDiagDeviceFloatComplexMV
+
+    function spmvDiagDeviceFloatComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatComplexVM')
+      use iso_c_binding
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_x
+      integer(c_int)  :: res
+    end function spmvDiagDeviceFloatComplexVM
+
+    function spmvDiagDeviceFloatComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceFloatComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value              :: deviceMat, x, y
+      complex(c_float_complex), value :: alpha, beta
+      integer(c_int), value           :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvDiagDeviceFloatComplexMMi
+
+    function spmvDiagDeviceDoubleComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceDoubleComplexF')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int)  :: res
+    end function spmvDiagDeviceDoubleComplexF
+    
+    function spmvDiagDeviceDoubleComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceDoubleComplexMV')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_y
+      integer(c_int)  :: res
+    end function spmvDiagDeviceDoubleComplexMV
+
+    function spmvDiagDeviceDoubleComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceDoubleComplexVM')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x
+      integer(c_int)  :: res
+    end function spmvDiagDeviceDoubleComplexVM
+
+    function spmvDiagDeviceDoubleComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvDiagDeviceDoubleComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvDiagDeviceDoubleComplexMMi
   end interface spmvDiagDevice
 end module diagdev_mod

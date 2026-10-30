@@ -139,7 +139,7 @@ module c_cusparse_mod
       integer(c_int)        :: nr, nc, nz
       integer(c_int)        :: res
     end function c_CSRGDeviceGetParms
-  end interface  
+  end interface
   
   interface spsvCSRGDevice
     function c_spsvCSRGDevice(Mat,alpha,x,beta,y) &
@@ -155,16 +155,49 @@ module c_cusparse_mod
   end interface
   
   interface spmvCSRGDevice
-    function c_spmvCSRGDevice(Mat,alpha,x,beta,y) &
-         &  bind(c,name="c_spmvCSRGDevice") result(res)
+    function c_spmvCSRGDeviceF(mat, alpha, x, beta, y) result(res) &
+         &  bind(c, name = "c_spmvCSRGDeviceF")
       use iso_c_binding
-      import  c_Cmat
-      type(c_Cmat)          :: Mat
+      import c_Cmat
+      type(c_Cmat)          :: mat
       type(c_ptr), value    :: x
       type(c_ptr), value    :: y
-      complex(c_float_complex), value :: alpha,beta
+      complex(c_float_complex), value :: alpha, beta
       integer(c_int)        :: res
-    end function c_spmvCSRGDevice
+    end function c_spmvCSRGDeviceF
+
+    function c_spmvCSRGDeviceMV(mat, alpha, x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "c_spmvCSRGDeviceMV")
+      use iso_c_binding
+      import c_Cmat
+      complex(c_float_complex), value :: alpha, beta
+      type(c_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_y
+      integer(c_int)        :: res
+    end function c_spmvCSRGDeviceMV
+
+    function c_spmvCSRGDeviceVM(mat, alpha, x, idx_x, beta, y) result(res) &
+         &  bind(c, name = "c_spmvCSRGDeviceVM")
+      use iso_c_binding
+      import c_Cmat
+      complex(c_float_complex), value :: alpha, beta
+      type(c_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x
+      integer(c_int)        :: res
+    end function c_spmvCSRGDeviceVM
+    
+    function c_spmvCSRGDeviceMMi(mat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "c_spmvCSRGDeviceMMi")
+      use iso_c_binding
+      import c_Cmat
+      complex(c_float_complex), value :: alpha, beta
+      type(c_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)        :: res
+    end function c_spmvCSRGDeviceMMi
   end interface
   
   interface CSRGHost2Device
@@ -192,8 +225,8 @@ module c_cusparse_mod
       integer(c_int)        :: res
     end function c_CSRGDevice2Host
   end interface
-
-#if PSB_CUDA_SHORT_VERSION <=10  
+  
+#if PSB_CUDA_SHORT_VERSION <= 10
   interface HYBGDeviceAlloc
     function c_HYBGDeviceAlloc(Mat,nr,nc,nz) &
          & bind(c,name="c_HYBGDeviceAlloc") result(res)
@@ -307,6 +340,7 @@ module c_cusparse_mod
       integer(c_int)        :: res
     end function c_HYBGHost2Device
   end interface
+ 
 #endif
   
 end module c_cusparse_mod

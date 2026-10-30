@@ -155,7 +155,7 @@ module d_cusparse_mod
   end interface
   
   interface spmvCSRGDevice
-    function d_spmvCSRGDevice(mat, alpha, x, beta, y) result(res) &
+    function d_spmvCSRGDeviceF(mat, alpha, x, beta, y) result(res) &
          &  bind(c, name = "d_spmvCSRGDeviceF")
       use iso_c_binding
       import d_Cmat
@@ -164,7 +164,7 @@ module d_cusparse_mod
       type(c_ptr), value    :: y
       real(c_double), value :: alpha, beta
       integer(c_int)        :: res
-    end function d_spmvCSRGDevice
+    end function d_spmvCSRGDeviceF
 
     function d_spmvCSRGDeviceMV(mat, alpha, x, beta, y, idx_y) result(res) &
          &  bind(c, name = "d_spmvCSRGDeviceMV")

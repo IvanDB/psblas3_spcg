@@ -155,16 +155,49 @@ module s_cusparse_mod
   end interface
   
   interface spmvCSRGDevice
-    function s_spmvCSRGDevice(Mat,alpha,x,beta,y) &
-         &  bind(c,name="s_spmvCSRGDevice") result(res)
+    function s_spmvCSRGDeviceF(mat, alpha, x, beta, y) result(res) &
+         &  bind(c, name = "s_spmvCSRGDeviceF")
       use iso_c_binding
-      import  s_Cmat
-      type(s_Cmat)          :: Mat
+      import s_Cmat
+      type(s_Cmat)          :: mat
       type(c_ptr), value    :: x
       type(c_ptr), value    :: y
-      real(c_float), value :: alpha,beta
+      real(c_float), value :: alpha, beta
       integer(c_int)        :: res
-    end function s_spmvCSRGDevice
+    end function s_spmvCSRGDeviceF
+
+    function s_spmvCSRGDeviceMV(mat, alpha, x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "s_spmvCSRGDeviceMV")
+      use iso_c_binding
+      import s_Cmat
+      real(c_float), value :: alpha, beta
+      type(s_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_y
+      integer(c_int)        :: res
+    end function s_spmvCSRGDeviceMV
+
+    function s_spmvCSRGDeviceVM(mat, alpha, x, idx_x, beta, y) result(res) &
+         &  bind(c, name = "s_spmvCSRGDeviceVM")
+      use iso_c_binding
+      import s_Cmat
+      real(c_float), value :: alpha, beta
+      type(s_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x
+      integer(c_int)        :: res
+    end function s_spmvCSRGDeviceVM
+    
+    function s_spmvCSRGDeviceMMi(mat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+         &  bind(c, name = "s_spmvCSRGDeviceMMi")
+      use iso_c_binding
+      import s_Cmat
+      real(c_float), value :: alpha, beta
+      type(s_Cmat)          :: mat
+      type(c_ptr), value    :: x, y
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)        :: res
+    end function s_spmvCSRGDeviceMMi
   end interface
   
   interface CSRGHost2Device
@@ -307,6 +340,7 @@ module s_cusparse_mod
       integer(c_int)        :: res
     end function s_HYBGHost2Device
   end interface
+ 
 #endif
   
 end module s_cusparse_mod

@@ -45,11 +45,8 @@ struct DiagDevice
   int *off;
 
   int rows;
-
   int cols;
-
   int diags;
-
 };
 
 typedef struct DiagDeviceParams
@@ -76,6 +73,7 @@ void freeDiagDevice(void* remoteMatrix);
 
 int readDiagDeviceDouble(void* deviceMat, double* a, int* off);
 int writeDiagDeviceDouble(void* deviceMat, double* a, int* off, int n);
+
 int spmvDiagDeviceDoubleF(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY);
 int spmvDiagDeviceDoubleMV(void *deviceMat, double alpha, void* deviceX, double beta, void* deviceY, int idxY);
 int spmvDiagDeviceDoubleVM(void *deviceMat, double alpha, void* deviceX, int idxX, double beta, void* deviceY);
@@ -83,6 +81,10 @@ int spmvDiagDeviceDoubleMMi(void *deviceMat, double alpha, void* deviceX, int id
 
 int readDiagDeviceFloat(void* deviceMat, float* a, int* off);
 int writeDiagDeviceFloat(void* deviceMat, float* a, int* off, int n);
-int spmvDiagDeviceFloat(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY);
+
+int spmvDiagDeviceFloatF(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY);
+int spmvDiagDeviceFloatMV(void *deviceMat, float alpha, void* deviceX, float beta, void* deviceY, int idxY);
+int spmvDiagDeviceFloatVM(void *deviceMat, float alpha, void* deviceX, int idxX, float beta, void* deviceY);
+int spmvDiagDeviceFloatMMi(void *deviceMat, float alpha, void* deviceX, int idxX, float beta, void* deviceY, int idxY);
 
 #endif

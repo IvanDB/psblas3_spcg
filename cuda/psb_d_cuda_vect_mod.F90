@@ -2024,7 +2024,6 @@ contains
     call x%set_host()
   end subroutine d_cuda_multi_set_vect
 
-  !!! NEW OP
   subroutine d_cuda_mvect_extract_col(m, alpha, x, idx_x, beta, y, info)
     use psi_serial_mod
     use psb_d_cuda_vect_mod, only : psb_d_vect_cuda

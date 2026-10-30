@@ -45,7 +45,7 @@ module elldev_mod
 
   interface 
     function FgetEllDeviceParams(rows, maxRowSize, nnzeros, columns, elementType, firstIndex) result(res) &
-         & bind(c, name = 'getEllDeviceParams')
+        & bind(c, name = 'getEllDeviceParams')
       use iso_c_binding
       import :: elldev_parms
       integer(c_int), value :: rows, maxRowSize, nnzeros, columns, elementType, firstIndex
@@ -55,7 +55,7 @@ module elldev_mod
 
   interface 
     function FallocEllDevice(deviceMat, rows, maxRowSize, nnzeros, columns, elementType, firstIndex) result(res) &
-         & bind(c, name = 'FallocEllDevice')
+        & bind(c, name = 'FallocEllDevice')
       use iso_c_binding
       type(c_ptr)           :: deviceMat
       integer(c_int), value :: rows, maxRowSize, nnzeros, columns, elementType, firstIndex
@@ -65,7 +65,7 @@ module elldev_mod
 
   interface writeEllDevice
     function writeEllDeviceFloat(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'writeEllDeviceFloat')
+        & bind(c, name = 'writeEllDeviceFloat')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat
       real(c_float)         :: val(ldj, *)
@@ -75,7 +75,7 @@ module elldev_mod
     end function writeEllDeviceFloat
 
     function writeEllDeviceDouble(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'writeEllDeviceDouble')
+        & bind(c, name = 'writeEllDeviceDouble')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat
       real(c_double)        :: val(ldj, *)
@@ -85,7 +85,7 @@ module elldev_mod
     end function writeEllDeviceDouble
 
     function writeEllDeviceFloatComplex(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'writeEllDeviceFloatComplex')
+        & bind(c, name = 'writeEllDeviceFloatComplex')
       use iso_c_binding
       type(c_ptr), value       :: deviceMat
       complex(c_float_complex) :: val(ldj, *)
@@ -95,7 +95,7 @@ module elldev_mod
     end function writeEllDeviceFloatComplex
 
     function writeEllDeviceDoubleComplex(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'writeEllDeviceDoubleComplex')
+        & bind(c, name = 'writeEllDeviceDoubleComplex')
       use iso_c_binding
       type(c_ptr), value        :: deviceMat
       complex(c_double_complex) :: val(ldj, *)
@@ -107,7 +107,7 @@ module elldev_mod
 
   interface readEllDevice 
     function readEllDeviceFloat(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'readEllDeviceFloat')
+        & bind(c, name = 'readEllDeviceFloat')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat
       real(c_float)         :: val(ldj, *)
@@ -117,7 +117,7 @@ module elldev_mod
     end function readEllDeviceFloat
 
     function readEllDeviceDouble(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'readEllDeviceDouble')
+        & bind(c, name = 'readEllDeviceDouble')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat
       real(c_double)        :: val(ldj, *)
@@ -127,7 +127,7 @@ module elldev_mod
     end function readEllDeviceDouble
 
     function readEllDeviceFloatComplex(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'readEllDeviceFloatComplex')
+        & bind(c, name = 'readEllDeviceFloatComplex')
       use iso_c_binding
       type(c_ptr), value       :: deviceMat
       complex(c_float_complex) :: val(ldj, *)
@@ -137,7 +137,7 @@ module elldev_mod
     end function readEllDeviceFloatComplex
 
     function readEllDeviceDoubleComplex(deviceMat, val, ja, ldj, irn, idiag) result(res) &
-         & bind(c, name = 'readEllDeviceDoubleComplex')
+        & bind(c, name = 'readEllDeviceDoubleComplex')
       use iso_c_binding
       type(c_ptr), value        :: deviceMat
       integer(c_int), value     :: ldj
@@ -149,7 +149,7 @@ module elldev_mod
 
   interface 
     subroutine freeEllDevice(deviceMat) &
-         & bind(c, name = 'freeEllDevice')
+        & bind(c, name = 'freeEllDevice')
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
     end subroutine freeEllDevice
@@ -157,7 +157,7 @@ module elldev_mod
 
   interface 
     subroutine zeroEllDevice(deviceMat) &
-         & bind(c, name = 'zeroEllDevice')
+        & bind(c, name = 'zeroEllDevice')
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
     end subroutine zeroEllDevice
@@ -172,7 +172,7 @@ module elldev_mod
 
   interface 
     function getEllTimer() result(res) &
-         & bind(c, name = 'getEllTimer')
+        & bind(c, name = 'getEllTimer')
       use iso_c_binding
       real(c_double)  :: res
     end function getEllTimer
@@ -180,7 +180,7 @@ module elldev_mod
 
   interface 
     function getEllDevicePitch(deviceMat) result(res) &
-         & bind(c, name = 'getEllDevicePitch')
+        & bind(c, name = 'getEllDevicePitch')
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
       integer(c_int)  :: res
@@ -189,7 +189,7 @@ module elldev_mod
 
   interface 
     function getEllDeviceMaxRowSize(deviceMat) &
-         & bind(c, name = 'getEllDeviceMaxRowSize') result(res)
+        & bind(c, name = 'getEllDeviceMaxRowSize') result(res)
       use iso_c_binding
       type(c_ptr), value  :: deviceMat
       integer(c_int)  :: res
@@ -198,7 +198,7 @@ module elldev_mod
 
   interface psi_CopyCooToElg
     function psiCopyCooToElgFloat(nr, nc, nza, hacksz, ldv, nzm, irn, &
-                                & idisp, ja, val, deviceMat) result(res) &
+                               & idisp, ja, val, deviceMat) result(res) &
         & bind(c, name = 'psiCopyCooToElgFloat')
       use iso_c_binding
       integer(c_int), value :: nr, nc, nza, hacksz, ldv, nzm
@@ -209,7 +209,7 @@ module elldev_mod
     end function psiCopyCooToElgFloat
 
     function psiCopyCooToElgDouble(nr, nc, nza, hacksz, ldv, nzm, irn, &
-                                  & idisp, ja, val, deviceMat) result(res) &
+                                 & idisp, ja, val, deviceMat) result(res) &
         & bind(c, name = 'psiCopyCooToElgDouble')
       use iso_c_binding
       integer(c_int), value   :: nr, nc, nza, hacksz, ldv, nzm
@@ -220,7 +220,7 @@ module elldev_mod
     end function psiCopyCooToElgDouble
 
     function psiCopyCooToElgFloatComplex(nr, nc, nza, hacksz, ldv, nzm, irn, &
-                                        & idisp, ja, val, deviceMat) result(res) &
+                                       & idisp, ja, val, deviceMat) result(res) &
         & bind(c, name = 'psiCopyCooToElgFloatComplex')
       use iso_c_binding
       integer(c_int), value     :: nr, nc, nza, hacksz, ldv, nzm
@@ -231,7 +231,7 @@ module elldev_mod
     end function psiCopyCooToElgFloatComplex
 
     function psiCopyCooToElgDoubleComplex(nr, nc, nza, hacksz, ldv, nzm, irn, &
-                                        & idisp, ja, val, deviceMat) result(res) &
+                                       & idisp, ja, val, deviceMat) result(res) &
         & bind(c, name = 'psiCopyCooToElgDoubleComplex')
       use iso_c_binding
       integer(c_int), value     :: nr, nc, nza, hacksz, ldv, nzm
@@ -244,7 +244,7 @@ module elldev_mod
 
   interface csputEllDeviceFloat
     function dev_csputEllDeviceFloat(deviceMat, nnz, ia, ja, val) result(res) &
-         & bind(c, name = 'dev_csputEllDeviceFloat')
+        & bind(c, name = 'dev_csputEllDeviceFloat')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, ia, ja, val
       integer(c_int), value :: nnz
@@ -254,7 +254,7 @@ module elldev_mod
 
   interface csputEllDeviceDouble
     function dev_csputEllDeviceDouble(deviceMat, nnz, ia, ja, val) result(res) &
-         & bind(c, name = 'dev_csputEllDeviceDouble')
+        & bind(c, name = 'dev_csputEllDeviceDouble')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat , ia, ja, val
       integer(c_int), value :: nnz
@@ -264,7 +264,7 @@ module elldev_mod
 
   interface csputEllDeviceFloatComplex
     function dev_csputEllDeviceFloatComplex(deviceMat, nnz, ia, ja, val) result(res) &
-         & bind(c, name = 'dev_csputEllDeviceFloatComplex')
+        & bind(c, name = 'dev_csputEllDeviceFloatComplex')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat , ia, ja, val
       integer(c_int), value :: nnz
@@ -274,7 +274,7 @@ module elldev_mod
 
   interface csputEllDeviceDoubleComplex
     function dev_csputEllDeviceDoubleComplex(deviceMat, nnz, ia, ja, val) result(res) &
-         & bind(c, name = 'dev_csputEllDeviceDoubleComplex')
+        & bind(c, name = 'dev_csputEllDeviceDoubleComplex')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat , ia, ja, val
       integer(c_int), value :: nnz
@@ -283,24 +283,51 @@ module elldev_mod
   end interface
 
   interface spmvEllDevice
-    function spmvEllDeviceFloat(deviceMat, alpha, x, beta, y) result(res) &
-         & bind(c, name = 'spmvEllDeviceFloat')
+    function spmvEllDeviceFloatF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatF')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_float), value  :: alpha, beta
       integer(c_int)  :: res
-    end function spmvEllDeviceFloat
+    end function spmvEllDeviceFloatF
 
-    function spmvEllDeviceDoubleF(deviceMat, alpha, x, beta, y) &
-         & result(res) bind(c, name = 'spmvEllDeviceDoubleF')
+    function spmvEllDeviceFloatMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatMV')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatMV
+
+    function spmvEllDeviceFloatVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatVM')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value  :: alpha, beta
+      integer(c_int), value :: idx_x
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatVM
+
+    function spmvEllDeviceFloatMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatMMi')
+      use iso_c_binding
+      type(c_ptr), value    :: deviceMat, x, y
+      real(c_float), value :: alpha, beta
+      integer(c_int), value :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatMMi
+
+    function spmvEllDeviceDoubleF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleF')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_double), value :: alpha, beta
       integer(c_int)  :: res
     end function spmvEllDeviceDoubleF
 
-    function spmvEllDeviceDoubleMV(deviceMat, alpha, x, beta, y, idx_y) &
-         & result(res) bind(c, name = 'spmvEllDeviceDoubleMV')
+    function spmvEllDeviceDoubleMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleMV')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_double), value :: alpha, beta
@@ -308,8 +335,8 @@ module elldev_mod
       integer(c_int)  :: res
     end function spmvEllDeviceDoubleMV
 
-    function spmvEllDeviceDoubleVM(deviceMat, alpha, x, idx_x, beta, y) &
-         & result(res) bind(c, name = 'spmvEllDeviceDoubleVM')
+    function spmvEllDeviceDoubleVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleVM')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_double), value :: alpha, beta
@@ -317,8 +344,8 @@ module elldev_mod
       integer(c_int)  :: res
     end function spmvEllDeviceDoubleVM
 
-    function spmvEllDeviceDoubleMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) &
-         & result(res) bind(c, name = 'spmvEllDeviceDoubleMMi')
+    function spmvEllDeviceDoubleMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleMMi')
       use iso_c_binding
       type(c_ptr), value    :: deviceMat, x, y
       real(c_double), value :: alpha, beta
@@ -326,20 +353,74 @@ module elldev_mod
       integer(c_int)  :: res
     end function spmvEllDeviceDoubleMMi
 
-    function spmvEllDeviceFloatComplex(deviceMat, alpha, x, beta, y) &
-         & result(res) bind(c, name = 'spmvEllDeviceFloatComplex')
+    function spmvEllDeviceFloatComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatComplexF')
       use iso_c_binding
       type(c_ptr), value              :: deviceMat, x, y 
       complex(c_float_complex), value :: alpha, beta
       integer(c_int)  :: res
-    end function spmvEllDeviceFloatComplex
+    end function spmvEllDeviceFloatComplexF
 
-    function spmvEllDeviceDoubleComplex(deviceMat, alpha, x, beta, y) &
-         & result(res) bind(c, name = 'spmvEllDeviceDoubleComplex')
+    function spmvEllDeviceFloatComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatComplexMV')
+      use iso_c_binding
+      type(c_ptr), value               :: deviceMat, x, y
+      complex(c_float_complex), value  :: alpha, beta
+      integer(c_int), value            :: idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatComplexMV
+
+    function spmvEllDeviceFloatComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatComplexVM')
+      use iso_c_binding
+      type(c_ptr), value               :: deviceMat, x, y
+      complex(c_float_complex), value  :: alpha, beta
+      integer(c_int), value            :: idx_x
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatComplexVM
+
+    function spmvEllDeviceFloatComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceFloatComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value               :: deviceMat, x, y
+      complex(c_float_complex), value  :: alpha, beta
+      integer(c_int), value            :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceFloatComplexMMi
+
+    function spmvEllDeviceDoubleComplexF(deviceMat, alpha, x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleComplexF')
       use iso_c_binding
       type(c_ptr), value                :: deviceMat, x, y 
       complex(c_double_complex), value  :: alpha, beta
       integer(c_int)  :: res
-    end function spmvEllDeviceDoubleComplex
+    end function spmvEllDeviceDoubleComplexF
+
+    function spmvEllDeviceDoubleComplexMV(deviceMat, alpha, x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleComplexMV')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceDoubleComplexMV
+
+    function spmvEllDeviceDoubleComplexVM(deviceMat, alpha, x, idx_x, beta, y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleComplexVM')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x
+      integer(c_int)  :: res
+    end function spmvEllDeviceDoubleComplexVM
+
+    function spmvEllDeviceDoubleComplexMMi(deviceMat, alpha, x, idx_x, beta, y, idx_y) result(res) &
+        & bind(c, name = 'spmvEllDeviceDoubleComplexMMi')
+      use iso_c_binding
+      type(c_ptr), value                :: deviceMat, x, y
+      complex(c_double_complex), value  :: alpha, beta
+      integer(c_int), value             :: idx_x, idx_y
+      integer(c_int)  :: res
+    end function spmvEllDeviceDoubleComplexMMi
   end interface
 end module elldev_mod

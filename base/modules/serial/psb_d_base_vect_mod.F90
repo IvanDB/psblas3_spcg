@@ -41,7 +41,7 @@
 !  runtime switching as per the STATE design pattern, similar to the
 !  sparse matrix types.
 !
-!
+
 module psb_d_base_vect_mod
   use psb_const_mod
   use psb_error_mod
@@ -2428,7 +2428,7 @@ contains
       call psb_errpush(psb_err_alloc_dealloc_, 'sctb_buf')
       return
     end if
-	if(y%is_dev()) call y%sync()
+	  if(y%is_dev()) call y%sync()
     if(idx%is_dev()) call idx%sync()
     call y%sct(n, idx%v(i:), y%combuf(i : ), beta)
     call y%set_host()
@@ -2904,7 +2904,7 @@ contains
     implicit none
     class(psb_d_base_multivect_type), intent(in)                :: x
     class(psb_d_base_multivect_type), intent(out), allocatable  :: y
-	integer(psb_ipk_), intent(out)                              :: info
+	  integer(psb_ipk_), intent(out)                              :: info
 
     allocate(psb_d_base_multivect_type :: y, stat = info)
   end subroutine d_base_mlv_mold
@@ -3817,13 +3817,8 @@ contains
     ncx = x%get_ncols()
     ncy = y%get_ncols()
 
-    select type(y)
-      type is (psb_d_base_multivect_type)
-        call dgemm('T', 'N', ncx, ncy, nrx, done, x%v, nrx, y%v, nry, dzero, res, ncx)
-      
-      class default
-        call y%dotsbr(m, x, y, res, info)
-    end select
+    if(y%is_dev()) call y%sync()
+    call dgemm('T', 'N', ncx, ncy, nrx, done, x%v, nrx, y%v, nry, dzero, res, ncx)
   end subroutine d_base_mvect_dot_mm
 
   subroutine d_base_mvect_dot_mv(m, x, y, res, info)

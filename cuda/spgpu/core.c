@@ -36,17 +36,13 @@ spgpuStatus_t spgpuCreate(spgpuHandle_t* pHandle, int device)
 	
 	*pHandle = handle;
 
-	if (err == cudaSuccess)
-		return SPGPU_SUCCESS;
-	else
-		return SPGPU_UNSPECIFIED;
+	return (err == cudaSuccess) ? SPGPU_SUCCESS : SPGPU_UNSPECIFIED;
 }
 
 void spgpuDestroy(spgpuHandle_t pHandle)
 {
 	cudaStreamDestroy(pHandle->defaultStream);
-
-	free((void*)pHandle);
+	free((void*) pHandle);
 }
 
 void spgpuStreamCreate(spgpuHandle_t pHandle, cudaStream_t* stream)
@@ -65,19 +61,13 @@ void spgpuStreamDestroy(cudaStream_t stream)
 
 void spgpuSetStream(spgpuHandle_t pHandle, cudaStream_t stream)
 {
-	SpgpuHandleStruct* handle = (SpgpuHandleStruct*)pHandle;
-
-	if (stream)
-	{
-		handle->currentStream = stream;
-	}
-	else
-		handle->currentStream = pHandle->defaultStream;
+	SpgpuHandleStruct* handle = (SpgpuHandleStruct*) pHandle;
+	handle->currentStream = (stream) ? stream : pHandle->defaultStream;
 }
 
 cudaStream_t spgpuGetStream(spgpuHandle_t pHandle)
 {
-	SpgpuHandleStruct* handle = (SpgpuHandleStruct*)pHandle;
+	SpgpuHandleStruct* handle = (SpgpuHandleStruct*) pHandle;
 	return handle->currentStream;
 }
 
@@ -85,18 +75,12 @@ size_t spgpuSizeOf(spgpuType_t typeCode)
 {
 	switch (typeCode)
 	{
-	case SPGPU_TYPE_INT:
-		return sizeof(int);
-	case SPGPU_TYPE_FLOAT:
-		return sizeof(float);
-	case SPGPU_TYPE_DOUBLE:
-		return sizeof(double);
-	case SPGPU_TYPE_COMPLEX_FLOAT:
-		return sizeof(cuFloatComplex);
-	case SPGPU_TYPE_COMPLEX_DOUBLE:
-		return sizeof(cuDoubleComplex);
-	default:
-		return 0; // error		
+		case SPGPU_TYPE_INT:			return sizeof(int);
+		case SPGPU_TYPE_FLOAT:			return sizeof(float);
+		case SPGPU_TYPE_DOUBLE:			return sizeof(double);
+		case SPGPU_TYPE_COMPLEX_FLOAT:	return sizeof(cuFloatComplex);
+		case SPGPU_TYPE_COMPLEX_DOUBLE:	return sizeof(cuDoubleComplex);
+		default:						return 0; // error		
 	}
 }
 
@@ -115,7 +99,9 @@ int resetCFIbuffer(CFIBuffer* buffer)
 
 int resetCFIstaticBuffers()
 {
-	return (resetCFIbuffer(getDotBuffer()) == SPGPU_SUCCESS) && (resetCFIbuffer(getColspanBuffer()) == SPGPU_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSPECIFIED;
+	int dotRes = resetCFIbuffer(getDotBuffer());
+	int colspanRes = resetCFIbuffer(getColspanBuffer());
+	return (dotRes == SPGPU_SUCCESS) && (colspanRes == SPGPU_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSPECIFIED;
 }
 
 void CFIdevBufferAlloc(CFIBuffer* buffer, size_t byteCount)

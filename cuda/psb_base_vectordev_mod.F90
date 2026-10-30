@@ -42,18 +42,18 @@ module psb_base_vectordev_mod
   end type multivec_dev_parms
 
   interface 
-    function FallocMultiVecDevice(deviceVec, count, Size, elementType) result(res) &
-            & bind(c, name = 'FallocMultiVecDevice')
+    function FallocMultiVecDevice(deviceVec, count, size, elementType) result(res) &
+        & bind(c, name = 'FallocMultiVecDevice')
       use iso_c_binding
       type(c_ptr)           :: deviceVec
-      integer(c_int), value :: count, Size, elementType
+      integer(c_int), value :: count, size, elementType
       integer(c_int)  :: res
     end function FallocMultiVecDevice
   end interface
 
   interface 
     subroutine unregisterMapped(buf) &
-              & bind(c, name = 'unregisterMapped')
+        & bind(c, name = 'unregisterMapped')
       use iso_c_binding
       type(c_ptr), value  :: buf
     end subroutine unregisterMapped
@@ -61,7 +61,7 @@ module psb_base_vectordev_mod
 
   interface 
     subroutine freeMultiVecDevice(deviceVec) &
-              & bind(c, name = 'freeMultiVecDevice')
+        & bind(c, name = 'freeMultiVecDevice')
       use iso_c_binding
       type(c_ptr), value  :: deviceVec
     end subroutine freeMultiVecDevice
@@ -69,7 +69,7 @@ module psb_base_vectordev_mod
 
   interface 
     function getMultiVecDeviceSize(deviceVec) result(res) &
-            & bind(c, name = 'getMultiVecDeviceSize')
+        & bind(c, name = 'getMultiVecDeviceSize')
       use iso_c_binding
       type(c_ptr), value  :: deviceVec
       integer(c_int)  :: res
@@ -78,7 +78,7 @@ module psb_base_vectordev_mod
 
   interface 
     function getMultiVecDeviceCount(deviceVec) result(res) &
-            & bind(c, name = 'getMultiVecDeviceCount')
+        & bind(c, name = 'getMultiVecDeviceCount')
       use iso_c_binding
       type(c_ptr), value  :: deviceVec
       integer(c_int)  :: res
