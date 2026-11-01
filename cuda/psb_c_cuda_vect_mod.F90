@@ -3063,7 +3063,7 @@ contains
     integer(psb_ipk_) :: info
     ! WARNING: this should be changed.
     if(x%is_host()) call x%sync()
-    info = nrm2MultiVecDeviceComplex(res, m, x%deviceVect, idx - ione)
+    info = nrm2MultiVecDeviceComplex(res, m, x%deviceVect, idx)
   end function c_cuda_mvect_nrm2_idxs
 
   subroutine c_cuda_mvect_scal(alpha, x)
