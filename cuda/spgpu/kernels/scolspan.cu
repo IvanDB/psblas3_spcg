@@ -6,14 +6,6 @@
  *
  */
 
-#include "core.h"
-
-extern "C"
-{
-	static CFIBuffer coeffBuffer;
-	CFIBuffer* getColspanBuffer() {return &coeffBuffer;};
-}
-
 #define VALUE_TYPE float
 #define TYPE_SYMBOL S
 #include "colspan.cuh"

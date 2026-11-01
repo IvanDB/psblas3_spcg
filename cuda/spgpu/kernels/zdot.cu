@@ -6,14 +6,6 @@
  *
  */
 
-#include "core.h"
-
-extern "C"
-{
-	static CFIBuffer dotBuffer;
-	CFIBuffer* getDotBuffer() {return &dotBuffer;};
-}
-
 #define VALUE_TYPE cuDoubleComplex
 #define TYPE_SYMBOL Z
 #undef USE_CUBLAS

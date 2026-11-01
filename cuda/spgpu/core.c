@@ -97,10 +97,12 @@ int resetCFIbuffer(CFIBuffer* buffer)
 	return SPGPU_SUCCESS;
 }
 
+CFIBuffer dotBuffer, coeffBuffer;
+
 int resetCFIstaticBuffers()
 {
-	int dotRes = resetCFIbuffer(getDotBuffer());
-	int colspanRes = resetCFIbuffer(getColspanBuffer());
+	int dotRes = resetCFIbuffer(&(dotBuffer));
+	int colspanRes = resetCFIbuffer(&(coeffBuffer));
 	return (dotRes == SPGPU_SUCCESS) && (colspanRes == SPGPU_SUCCESS) ? SPGPU_SUCCESS : SPGPU_UNSPECIFIED;
 }
 

@@ -6,14 +6,6 @@
  *
  */
 
-#include "core.h"
-
-extern "C"
-{
-	static CFIBuffer coeffBuffer;
-	CFIBuffer* getColspanBuffer() {return &coeffBuffer;};
-}
-
 #define VALUE_TYPE cuDoubleComplex
 #define TYPE_SYMBOL Z
 #include "colspan.cuh"

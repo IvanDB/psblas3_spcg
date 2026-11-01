@@ -6,14 +6,6 @@
  *
  */
 
-#include "core.h"
-
-extern "C"
-{
-	static CFIBuffer dotBuffer;
-	CFIBuffer* getDotBuffer() {return &dotBuffer;};
-}
-
 #define VALUE_TYPE float
 #define TYPE_SYMBOL S
 #define USE_CUBLAS 1

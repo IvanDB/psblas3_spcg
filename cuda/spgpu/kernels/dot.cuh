@@ -13,6 +13,8 @@ extern "C"
 	cublasHandle_t psb_cudaGetCublasHandle();
 }
 
+extern CFIBuffer dotBuffer;
+
 #undef GEN_CUBLAS_FUNC_NAME
 #define GEN_CUBLAS_FUNC_NAME(x, t) CONCAT(CONCAT(cublas, x), t)
 
