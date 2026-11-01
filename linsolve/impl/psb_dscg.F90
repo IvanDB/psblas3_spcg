@@ -30,18 +30,18 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   type(psb_ctxt_type) :: ctxt
   integer(psb_ipk_)   :: istop_, itmax_, itrace_, FGS_sweeps_
   character(len=3)    :: base_type_, Gram_solver_
-  integer(psb_ipk_)   :: err_act, np, me, debug_level, debug_unit, &
-                          & n_col, n_row
+  integer(psb_ipk_)   :: err_act, np, me, debug_level, debug_unit, n_col, n_row
   integer(psb_lpk_)   :: mglob
   character(len=20)           :: name = 'psb_dscg'
   character(len=*), parameter :: methdbasename = 'sStepCG'
   character(len=20)           :: methdfullname
 
-  real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :)
-  type(psb_d_vect_type)       :: r  
-  type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
-  real(psb_dpk_)              :: cheb_coeff(3)
-  integer(psb_ipk_)           :: itidx
+  real(psb_dpk_), allocatable     :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :)
+  integer(psb_ipk_), allocatable  :: pW(:)
+  type(psb_d_vect_type)           :: r  
+  type(psb_d_multivect_type)      :: Z, Q, P, V, temp_mv
+  real(psb_dpk_)                  :: cheb_coeff(3)
+  integer(psb_ipk_)               :: itidx
   
   type(psb_itconv_type)         :: stopdat
   real(psb_dpk_)                :: derr
@@ -52,13 +52,29 @@ subroutine psb_dscg_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
+  
+  class(psb_d_base_multivect_type), pointer :: mvect_mold
+  class(psb_d_base_vect_type), pointer      :: vect_mold
+  type(psb_d_base_multivect_type), target   :: mvect_base
+  type(psb_d_base_vect_type), target        :: vect_base
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda), target        :: mvect_cuda
+  type(psb_d_vect_cuda), target             :: vect_cuda
+#endif
 
 #if defined(PSB_HAVE_CUDA)
-  type(psb_d_multivect_cuda) :: mvect_mold
-  type(psb_d_vect_cuda) :: vect_mold
+  select type(in_v => x%v)
+    type is(psb_d_vect_cuda)
+      mvect_mold  => mvect_cuda
+      vect_mold   => vect_cuda
+    
+    class default
+      mvect_mold  => mvect_base
+      vect_mold  => vect_base
+  end select
 #else
-  type(psb_d_base_multivect_type) :: mvect_mold
-  type(psb_d_base_vect_type) :: vect_mold
+  mvect_mold => mvect_base
+  vect_mold  => vect_base
 #endif
 
   info = psb_success_
@@ -409,11 +425,12 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=*), parameter :: methdbasename = 'sStepCGv2'
   character(len=20)           :: methdfullname
 
-  real(psb_dpk_), allocatable :: alpha(:), beta(:, :), W(:, :), pW(:), temp_fa(:, :), B2(:, :), c0(:)
-  type(psb_d_vect_type)       :: r  
-  type(psb_d_multivect_type)  :: Z, Q, P, V, temp_mv
-  real(psb_dpk_)              :: cheb_coeff(3)
-  integer(psb_ipk_)           :: itidx
+  real(psb_dpk_), allocatable     :: alpha(:), beta(:, :), W(:, :), temp_fa(:, :), B2(:, :), c0(:)
+  integer(psb_ipk_), allocatable  :: pW(:)
+  type(psb_d_vect_type)           :: r  
+  type(psb_d_multivect_type)      :: Z, Q, P, V, temp_mv
+  real(psb_dpk_)                  :: cheb_coeff(3)
+  integer(psb_ipk_)               :: itidx
   
   type(psb_itconv_type)         :: stopdat
   real(psb_dpk_)                :: derr 
@@ -424,13 +441,29 @@ subroutine psb_dscg2_vect(a, prec, b, x, s, eps, desc_a, info, &
   character(len=3), parameter   :: forwardGS = "FGS"
   character(len=3), parameter   :: lapackLU = "LLU"
   character(len=3), parameter   :: lapackCC = "LCC"
+  
+  class(psb_d_base_multivect_type), pointer :: mvect_mold
+  class(psb_d_base_vect_type), pointer      :: vect_mold
+  type(psb_d_base_multivect_type), target   :: mvect_base
+  type(psb_d_base_vect_type), target        :: vect_base
+#if defined(PSB_HAVE_CUDA)
+  type(psb_d_multivect_cuda), target        :: mvect_cuda
+  type(psb_d_vect_cuda), target             :: vect_cuda
+#endif
 
 #if defined(PSB_HAVE_CUDA)
-  type(psb_d_multivect_cuda) :: mvect_mold
-  type(psb_d_vect_cuda) :: vect_mold
+  select type(in_v => x%v)
+    type is(psb_d_vect_cuda)
+      mvect_mold  => mvect_cuda
+      vect_mold   => vect_cuda
+    
+    class default
+      mvect_mold  => mvect_base
+      vect_mold  => vect_base
+  end select
 #else
-  type(psb_d_base_multivect_type) :: mvect_mold
-  type(psb_d_base_vect_type) :: vect_mold
+  mvect_mold => mvect_base
+  vect_mold  => vect_base
 #endif
 
   info = psb_success_
