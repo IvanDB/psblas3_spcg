@@ -3633,7 +3633,7 @@ contains
     nrx = x%get_nrows()
     nry = y%get_nrows()
 
-    if(nrx /= nry) then
+    if((m > nrx) .or. (m > nry)) then
       info = psb_err_invalid_mvect_size_
       return
     endif
@@ -3641,8 +3641,9 @@ contains
     ncx = x%get_ncols()
     ncy = y%get_ncols()
 
+    if(x%is_dev()) call x%sync()
     if(y%is_dev()) call y%sync()
-    call zgemm('T', 'N', ncx, ncy, nrx, zone, x%v, nrx, y%v, nry, zzero, res, ncx)
+    call zgemm('T', 'N', ncx, ncy, m, zone, x%v, size(x%v, 1), y%v, size(y%v, 1), zzero, res, ncx)
   end subroutine z_base_mvect_dot_mm
 
   subroutine z_base_mvect_dot_mv(m, x, y, res, info)
@@ -3667,15 +3668,16 @@ contains
     nrx = x%get_nrows()
     nry = y%get_nrows()
 
-    if(nry /= nrx) then
+    if((m > nrx) .or. (m > nry)) then
       info = psb_err_invalid_vect_size_
       return
     endif
 
     ncx = x%get_ncols()
 
+    if(x%is_dev()) call x%sync()
     if(y%is_dev()) call y%sync()
-    call zgemv('T', nrx, ncx, zone, x%v, nrx, y%v, 1, zzero, res, 1)
+    call zgemv('T', m, ncx, zone, x%v, size(x%v, 1), y%v, 1, zzero, res, 1)
   end subroutine z_base_mvect_dot_mv
 
   subroutine z_base_mvect_mlt_v_full(m, alpha, x, y, beta, info, conjgx, conjgy)

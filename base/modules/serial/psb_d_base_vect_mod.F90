@@ -3811,7 +3811,7 @@ contains
     nrx = x%get_nrows()
     nry = y%get_nrows()
 
-    if(nrx /= nry) then
+    if((m > nrx) .or. (m > nry)) then
       info = psb_err_invalid_mvect_size_
       return
     endif
@@ -3819,8 +3819,9 @@ contains
     ncx = x%get_ncols()
     ncy = y%get_ncols()
 
+    if(x%is_dev()) call x%sync()
     if(y%is_dev()) call y%sync()
-    call dgemm('T', 'N', ncx, ncy, nrx, done, x%v, nrx, y%v, nry, dzero, res, ncx)
+    call dgemm('T', 'N', ncx, ncy, m, done, x%v, size(x%v, 1), y%v, size(y%v, 1), dzero, res, ncx)
   end subroutine d_base_mvect_dot_mm
 
   subroutine d_base_mvect_dot_mv(m, x, y, res, info)
@@ -3845,15 +3846,16 @@ contains
     nrx = x%get_nrows()
     nry = y%get_nrows()
 
-    if(nry /= nrx) then
+    if((m > nrx) .or. (m > nry)) then
       info = psb_err_invalid_vect_size_
       return
     endif
 
     ncx = x%get_ncols()
 
+    if(x%is_dev()) call x%sync()
     if(y%is_dev()) call y%sync()
-    call dgemv('T', nrx, ncx, done, x%v, nrx, y%v, 1, dzero, res, 1)
+    call dgemv('T', m, ncx, done, x%v, size(x%v, 1), y%v, 1, dzero, res, 1)
   end subroutine d_base_mvect_dot_mv
 
   subroutine d_base_mvect_mlt_v_full(m, alpha, x, y, beta, info, conjgx, conjgy)
