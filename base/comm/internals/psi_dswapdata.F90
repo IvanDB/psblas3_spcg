@@ -418,9 +418,10 @@ contains
   !   Data exchange among processes.
   !
   !   Takes care of Y an encaspulated multivector.
+  !   If COL is present only that column is exchanged; the matching send and
+  !   receive calls must pass the same value.
   !   
-  !   
-  module subroutine psi_dswapdata_multivect(flag,beta,y,desc_a,work,info,data)
+  module subroutine psi_dswapdata_multivect(flag,beta,y,desc_a,work,info,data,col)
 #ifdef PSB_MPI_MOD
     use mpi
 #endif
@@ -436,6 +437,7 @@ contains
     real(psb_dpk_), target   :: work(:)
     type(psb_desc_type), target  :: desc_a
     integer(psb_ipk_), optional           :: data
+    integer(psb_ipk_), optional, intent(in) :: col
 
     ! locals
     type(psb_ctxt_type) :: ctxt
@@ -475,7 +477,7 @@ contains
       goto 9999
     end if
 
-    call psi_swapdata(ctxt,flag,beta,y,d_vidx,totxch,idxs,idxr,work,info)
+    call psi_swapdata(ctxt,flag,beta,y,d_vidx,totxch,idxs,idxr,work,info,col=col)
     if (info /= psb_success_) goto 9999
 
     call psb_erractionrestore(err_act)
@@ -501,7 +503,7 @@ contains
   !   
   ! 
   module subroutine psi_dswap_vidx_multivect(ctxt,flag,beta,y,idx, &
-       & totxch,totsnd,totrcv,work,info)
+       & totxch,totsnd,totrcv,work,info,col)
 
 #ifdef PSB_MPI_MOD
     use mpi
@@ -519,6 +521,7 @@ contains
     real(psb_dpk_), target :: work(:)
     class(psb_i_base_vect_type), intent(inout) :: idx
     integer(psb_ipk_), intent(in)              :: totxch,totsnd, totrcv
+    integer(psb_ipk_), optional, intent(in)    :: col
 
     ! locals
     integer(psb_mpk_)   :: np, me, nesd, nerv, n
@@ -543,7 +546,17 @@ contains
     endif
     icomm = ctxt%get_mpic()
 
-    n = y%get_ncols()
+    ! With COL present the buffer layout is that of a single column.
+    if (present(col)) then
+      if ((col < 1).or.(col > y%get_ncols())) then
+        info=psb_err_iarg_invalid_value_
+        call psb_errpush(info,name)
+        goto 9999
+      end if
+      n = 1
+    else
+      n = y%get_ncols()
+    end if
 
     swap_mpi  = iand(flag,psb_swap_mpi_)  /= 0
     swap_sync = iand(flag,psb_swap_sync_) /= 0
@@ -605,7 +618,11 @@ contains
         nerv = idx%v(pnti+psb_n_elem_recv_)
         nesd = idx%v(pnti+nerv+psb_n_elem_send_)
         idx_pt = 1+pnti+nerv+psb_n_elem_send_
-        call y%gth(idx_pt,snd_pt,nesd,idx)
+        if (present(col)) then
+          call y%gthzbuf_col(idx_pt,snd_pt,nesd,idx,col)
+        else
+          call y%gth(idx_pt,snd_pt,nesd,idx)
+        end if
         rcv_pt = rcv_pt + n*nerv
         snd_pt = snd_pt + n*nesd
         pnti   = pnti + nerv + nesd + 3
@@ -710,7 +727,11 @@ contains
 
         if (debug) write(0,*)me,' Received from: ',prcid(i),&
              & y%combuf(rcv_pt:rcv_pt+n*nerv-1)        
-        call y%sct(idx_pt,rcv_pt,nerv,idx,beta)
+        if (present(col)) then
+          call y%sctb_buf_col(idx_pt,rcv_pt,nerv,idx,col,beta)
+        else
+          call y%sct(idx_pt,rcv_pt,nerv,idx,beta)
+        end if
         rcv_pt = rcv_pt + n*nerv
         snd_pt = snd_pt + n*nesd
         pnti   = pnti + nerv + nesd + 3
@@ -726,7 +747,7 @@ contains
       if (debug) write(*,*) me,' wait'
       call y%device_wait()
       if (debug) write(*,*) me,' free buffer'
-      call y%free_buffer(info)
+      call y%maybe_free_buffer(info)
       if (info == 0) call y%free_comid(info)
       if (info /= 0) then 
         call psb_errpush(psb_err_alloc_dealloc_,name)

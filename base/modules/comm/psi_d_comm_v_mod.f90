@@ -45,7 +45,7 @@ module psi_d_comm_v_mod
       type(psb_desc_type), target :: desc_a
       integer(psb_ipk_), optional :: data
     end subroutine psi_dswapdata_vect
-    module subroutine psi_dswapdata_multivect(flag,beta,y,desc_a,work,info,data)
+    module subroutine psi_dswapdata_multivect(flag,beta,y,desc_a,work,info,data,col)
       integer(psb_ipk_), intent(in)         :: flag
       integer(psb_ipk_), intent(out)        :: info
       class(psb_d_base_multivect_type)    :: y
@@ -53,6 +53,7 @@ module psi_d_comm_v_mod
       real(psb_dpk_),target    :: work(:)
       type(psb_desc_type), target :: desc_a
       integer(psb_ipk_), optional :: data
+      integer(psb_ipk_), optional, intent(in) :: col
     end subroutine psi_dswapdata_multivect
     module subroutine psi_dswap_vidx_vect(ctxt,flag,beta,y,idx,&
          & totxch,totsnd,totrcv,work,info)
@@ -66,7 +67,7 @@ module psi_d_comm_v_mod
       integer(psb_ipk_), intent(in)           :: totxch,totsnd, totrcv
     end subroutine psi_dswap_vidx_vect
     module subroutine psi_dswap_vidx_multivect(ctxt,flag,beta,y,idx,&
-         & totxch,totsnd,totrcv,work,info)
+         & totxch,totsnd,totrcv,work,info,col)
       type(psb_ctxt_type), intent(in)       :: ctxt
       integer(psb_ipk_), intent(in)         :: flag
       integer(psb_ipk_), intent(out)        :: info
@@ -75,6 +76,7 @@ module psi_d_comm_v_mod
       real(psb_dpk_), target               :: work(:)
       class(psb_i_base_vect_type), intent(inout) :: idx
       integer(psb_ipk_), intent(in)           :: totxch,totsnd, totrcv
+      integer(psb_ipk_), optional, intent(in) :: col
     end subroutine psi_dswap_vidx_multivect
   end interface psi_swapdata
 
