@@ -1244,7 +1244,7 @@ subroutine psb_dspmv_vm(alpha, a, x, idx_x, beta, y, desc_a, info, trans, work, 
         
         if(do_timings) call psb_tic(mv_phase11)
         if(doswap_) call psi_swapdata(ior(psb_swap_send_, psb_swap_recv_), dzero, x%v, desc_a, iwork, info, &
-                                     & data = psb_comm_halo_, col = idx_x)
+                                    & data = psb_comm_halo_, col = idx_x)
         if(do_timings) call psb_toc(mv_phase11)
 
         if(do_timings) call psb_tic(mv_phase12)          
@@ -1463,7 +1463,7 @@ subroutine psb_dspmv_mm_idxs(alpha, a, x, idx_x, beta, y, idx_y, desc_a, info, t
         
         if(do_timings) call psb_tic(mv_phase11)          
         if(doswap_) call psi_swapdata(ior(psb_swap_send_, psb_swap_recv_), dzero, x%v, desc_a, iwork, info, &
-                                     & data = psb_comm_halo_, col = idx_x)
+                                    & data = psb_comm_halo_, col = idx_x)
         if(do_timings) call psb_toc(mv_phase11)
 
         if(do_timings) call psb_tic(mv_phase12)          

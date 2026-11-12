@@ -1662,9 +1662,10 @@ contains
   subroutine d_cuda_multi_new_buffer(n, x, info)
     use psb_realloc_mod
     implicit none
-    class(psb_d_multivect_cuda), intent(inout) :: x
     integer(psb_ipk_), intent(in)              :: n
+    class(psb_d_multivect_cuda), intent(inout) :: x
     integer(psb_ipk_), intent(out)             :: info
+
     integer(psb_ipk_) :: nb
 
     info = psb_success_
@@ -1739,16 +1740,17 @@ contains
   !
   subroutine d_cuda_multi_dev_gth(i, ixb, n, idx, col, x)
     implicit none
-    integer(psb_ipk_), intent(in)    :: i, ixb, col
-    integer(psb_mpk_), intent(in)    :: n
-    class(psb_i_base_vect_type)      :: idx
-    class(psb_d_multivect_cuda)      :: x
+    integer(psb_ipk_), intent(in) :: i, ixb, col
+    integer(psb_mpk_), intent(in) :: n
+    class(psb_i_base_vect_type)   :: idx
+    class(psb_d_multivect_cuda)   :: x
+
     type(c_ptr) :: hbuf
     logical     :: uva
     integer     :: info
 
     if(n <= 0) return
-    info = 0
+    info = psb_success_
     uva  = psb_cuda_DeviceHasUVA()
     hbuf = x%dt_buf
     if(uva) hbuf = x%dt_p_buf
@@ -1756,12 +1758,13 @@ contains
       class is (psb_i_vect_cuda)
         if(ii%is_host()) call ii%sync()
         info = igathMultiVecDeviceDoubleVecIdx(x%deviceVect, col - 1, n, i, ii%deviceVect, ixb, hbuf, 1)
+        
       class default
         info = writeInt(i, x%i_buf, ii%v(i:), n, 1)
-        if(info == 0) info = igathMultiVecDeviceDouble(x%deviceVect, col - 1, n, i, x%i_buf, ixb, hbuf, 1)
+        if(info == psb_success_) info = igathMultiVecDeviceDouble(x%deviceVect, col - 1, n, i, x%i_buf, ixb, hbuf, 1)
     end select
-    if((info == 0) .and. (.not. uva)) info = readDouble(ixb, x%dt_buf, x%combuf(ixb:), n, 1)
-    if(info /= 0) call psb_errpush(psb_err_internal_error_, 'd_cuda_multi_dev_gth')
+    if((info == psb_success_) .and. (.not. uva)) info = readDouble(ixb, x%dt_buf, x%combuf(ixb:), n, 1)
+    if(info /= psb_success_) call psb_errpush(psb_err_internal_error_, 'd_cuda_multi_dev_gth')
   end subroutine d_cuda_multi_dev_gth
 
   !
@@ -1769,23 +1772,24 @@ contains
   !
   subroutine d_cuda_multi_dev_sct(i, iyb, n, idx, col, beta, y)
     implicit none
-    integer(psb_ipk_), intent(in)    :: i, iyb, col
-    integer(psb_mpk_), intent(in)    :: n
-    class(psb_i_base_vect_type)      :: idx
-    real(psb_dpk_), intent(in)       :: beta
-    class(psb_d_multivect_cuda)      :: y
+    integer(psb_ipk_), intent(in) :: i, iyb, col
+    integer(psb_mpk_), intent(in) :: n
+    class(psb_i_base_vect_type)   :: idx
+    real(psb_dpk_), intent(in)    :: beta
+    class(psb_d_multivect_cuda)   :: y
+
     type(c_ptr) :: hbuf
     integer     :: info
 
     if(n <= 0) return
-    info = 0
+    info = psb_success_
     if(psb_cuda_DeviceHasUVA()) then
       hbuf = y%dt_p_buf
     else
       hbuf = y%dt_buf
       info = writeDouble(iyb, y%dt_buf, y%combuf(iyb:), n, 1)
     end if
-    if(info == 0) then
+    if(info == psb_success_) then
       ! The interface names the third and fourth arguments FIRST and N, the C
       ! routine takes N and FIRST: they are passed by position, as elsewhere.
       select type(ii => idx)
@@ -1794,10 +1798,10 @@ contains
           info = iscatMultiVecDeviceDoubleVecIdx(y%deviceVect, col - 1, n, i, ii%deviceVect, iyb, hbuf, 1, beta)
         class default
           info = writeInt(i, y%i_buf, ii%v(i:), n, 1)
-          if(info == 0) info = iscatMultiVecDeviceDouble(y%deviceVect, col - 1, n, i, y%i_buf, iyb, hbuf, 1, beta)
+          if(info == psb_success_) info = iscatMultiVecDeviceDouble(y%deviceVect, col - 1, n, i, y%i_buf, iyb, hbuf, 1, beta)
       end select
     end if
-    if(info /= 0) call psb_errpush(psb_err_internal_error_, 'd_cuda_multi_dev_sct')
+    if(info /= psb_success_) call psb_errpush(psb_err_internal_error_, 'd_cuda_multi_dev_sct')
   end subroutine d_cuda_multi_dev_sct
 
   !
@@ -1806,10 +1810,10 @@ contains
   !
   subroutine d_cuda_multi_gthzbuf(i, ixb, n, idx, x)
     implicit none
-    integer(psb_ipk_)                :: i, ixb
-    integer(psb_mpk_)                :: n
-    class(psb_i_base_vect_type)      :: idx
-    class(psb_d_multivect_cuda)      :: x
+    integer(psb_ipk_)           :: i, ixb
+    integer(psb_mpk_)           :: n
+    class(psb_i_base_vect_type) :: idx
+    class(psb_d_multivect_cuda) :: x
     integer(psb_ipk_) :: j
 
     if(.not. allocated(x%combuf)) then
@@ -1827,10 +1831,10 @@ contains
 
   subroutine d_cuda_multi_gthzbuf_col(i, ixb, n, idx, col, x)
     implicit none
-    integer(psb_ipk_)                :: i, ixb, col
-    integer(psb_mpk_)                :: n
-    class(psb_i_base_vect_type)      :: idx
-    class(psb_d_multivect_cuda)      :: x
+    integer(psb_ipk_)           :: i, ixb, col
+    integer(psb_mpk_)           :: n
+    class(psb_i_base_vect_type) :: idx
+    class(psb_d_multivect_cuda) :: x
 
     if(.not. allocated(x%combuf)) then
       call psb_errpush(psb_err_alloc_dealloc_, 'gthzbuf_col')
@@ -1850,11 +1854,12 @@ contains
   !
   subroutine d_cuda_multi_sctb_buf(i, iyb, n, idx, beta, y)
     implicit none
-    integer(psb_ipk_)                :: i, iyb
-    integer(psb_mpk_)                :: n
-    class(psb_i_base_vect_type)      :: idx
-    real(psb_dpk_)                   :: beta
-    class(psb_d_multivect_cuda)      :: y
+    integer(psb_ipk_)           :: i, iyb
+    integer(psb_mpk_)           :: n
+    class(psb_i_base_vect_type) :: idx
+    real(psb_dpk_)              :: beta
+    class(psb_d_multivect_cuda) :: y
+
     integer(psb_ipk_) :: j
     logical           :: was_sync
 
@@ -1874,11 +1879,12 @@ contains
 
   subroutine d_cuda_multi_sctb_buf_col(i, iyb, n, idx, col, beta, y)
     implicit none
-    integer(psb_ipk_)                :: i, iyb, col
-    integer(psb_mpk_)                :: n
-    class(psb_i_base_vect_type)      :: idx
-    real(psb_dpk_)                   :: beta
-    class(psb_d_multivect_cuda)      :: y
+    integer(psb_ipk_)           :: i, iyb, col
+    integer(psb_mpk_)           :: n
+    class(psb_i_base_vect_type) :: idx
+    real(psb_dpk_)              :: beta
+    class(psb_d_multivect_cuda) :: y
+    
     logical :: was_sync
 
     if(.not. allocated(y%combuf)) then

@@ -2785,12 +2785,12 @@ module psb_d_base_multivect_mod
     procedure, pass(x) :: gthzbuf  => d_base_mlv_gthzbuf
     generic, public    :: gth      => gthab, gthzv, gthzm, gthzv_x, gthzbuf
     procedure, pass(x) :: gthzbuf_col  => d_base_mlv_gthzbuf_col
-    procedure, pass(y) :: sctb_buf_col => d_base_mlv_sctb_buf_col
     procedure, pass(y) :: sctb     => d_base_mlv_sctb
     procedure, pass(y) :: sctbr2   => d_base_mlv_sctbr2
     procedure, pass(y) :: sctb_x   => d_base_mlv_sctb_x
     procedure, pass(y) :: sctb_buf => d_base_mlv_sctb_buf
     generic, public    :: sct      => sctb, sctbr2, sctb_x, sctb_buf
+    procedure, pass(y) :: sctb_buf_col => d_base_mlv_sctb_buf_col
   end type psb_d_base_multivect_type
 
   interface psb_d_base_multivect
